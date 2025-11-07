@@ -1,0 +1,13 @@
+basic test:
+  workers: 1
+  users: 1
+  spawn_rate: 1
+  run_time: 60
+  description: "basic test for baseline"
+
+flash-sale:
+  workers: 4
+  users: 500
+  spawn_rate: 1
+  run_time: 180
+  description: "flash sale lasting 3 minutes"
