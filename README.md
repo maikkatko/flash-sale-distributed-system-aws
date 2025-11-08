@@ -46,3 +46,34 @@ Then GET
 ```
 curl -v YOUR_ALB_URL/products/1
 ```
+
+Sample output:
+$ curl -v curl -v -X POST http://flash-224422.us-west-2.elb.amazonaws.com/products \
+
+> -H "Content-Type: application/json" \
+> -d '{
+> "name": "Super Widget",
+> "description": "A very high-quality widget.",
+> "price": 99.99,
+> "stock": 100
+
+$ curl -v http://flash-sale-alb-754224422.us-west-2.elb.amazonaws.com/products/1
+
+- Host flash-sale-alb-754224422.us-west-2.elb.amazonaws.com:80 was resolved.
+- IPv6: (none)
+- IPv4: 54.70.17.29
+- Trying 54.70.17.29:80...
+- Connected to flash-sale-alb-754224422.us-west-2.elb.amazonaws.com (54.70.17.29) port 80
+  > GET /products/1 HTTP/1.1
+  > Host: flash-sale-alb-754224422.us-west-2.elb.amazonaws.com
+  > User-Agent: curl/8.6.0
+  > Accept: _/_
+  >
+  > < HTTP/1.1 200 OK
+  > < Date: Sat, 08 Nov 2025 22:50:48 GMT
+  > < Content-Type: application/json; charset=utf-8
+  > < Content-Length: 172
+  > < Connection: keep-alive
+  > <
+- Connection #0 to host flash-sale-alb-754224422.us-west-2.elb.amazonaws.com left intact
+  {"id":1,"name":"Super Widget","description":"A very high-quality widget.","price":99.99,"stock":100,"created_at":"2025-11-08T22:50:16Z","updated_at":"2025-11-08T22:50:16Z"}
