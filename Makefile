@@ -89,12 +89,11 @@ analyze:
 
 update-server:
 	@echo === Updating Server Service ===
-	@python scripts/update_ecr_ecs.py server
+	@python scripts/update_ecr_ecs.py
 
 restart-server:
 	@echo === Restarting Server Service ===
-	@powershell.exe -Command "aws ecs update-service --cluster flash-sale-cluster --service flash-sale-api --force-new-deployment" > $null
-	@echo Server service restarted
+	@python scripts/restart_ecs.py
 
 clean:
 	@docker-compose down 2>nul || echo.
