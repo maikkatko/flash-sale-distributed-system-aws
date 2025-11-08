@@ -23,14 +23,12 @@ resource "aws_ecs_task_definition" "this" {
       name      = var.service_name
       image     = var.image
       essential = true
-
       portMappings = [
         {
           containerPort = var.container_port
           protocol      = "tcp"
         }
       ]
-
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -39,8 +37,10 @@ resource "aws_ecs_task_definition" "this" {
           "awslogs-stream-prefix" = "ecs"
         }
       }
-
-      environment = []
+      environment = [for name, value in var.environment_variables : {
+        name  = name
+        value = value
+      }]
     }
   ])
 }
@@ -56,7 +56,7 @@ resource "aws_ecs_service" "this" {
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = var.security_group_ids
-    assign_public_ip = true
+    assign_public_ip = false
   }
 
   # ALB Integration - NEW!
@@ -70,9 +70,6 @@ resource "aws_ecs_service" "this" {
   lifecycle {
     ignore_changes = [desired_count]
   }
-
-  # Wait for target group to be ready
-  depends_on = [var.target_group_arn]
 }
 
 # Auto Scaling Target - NEW!

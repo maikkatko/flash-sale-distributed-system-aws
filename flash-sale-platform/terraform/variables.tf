@@ -15,9 +15,15 @@ variable "service_name" {
   default = "flash-sale"
 }
 
-variable "container_port" {
+variable "container_port_products" {
   type    = number
-  default = 8080
+  default = 8081
+}
+
+variable "container_port" {
+  description = "The port the container listens on. Used by network and ALB modules."
+  type        = number
+  default     = 8080
 }
 
 # How long to keep logs
@@ -55,4 +61,22 @@ variable "scale_in_cooldown" {
   description = "Cooldown period (seconds) after scaling in"
   type        = number
   default     = 300
+}
+
+# Database variables
+variable "db_name" {
+  description = "The name of the database to create."
+  type        = string
+}
+
+variable "db_username" {
+  description = "The master username for the database."
+  type        = string
+  sensitive   = true
+}
+
+variable "db_password" {
+  description = "The master password for the database."
+  type        = string
+  sensitive   = true
 }
