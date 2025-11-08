@@ -45,6 +45,8 @@ def _get_aws_ecs_service_arns():
     return services['serviceArns']
 
 def set_aws_env_vars():
+    
+
     alb_dns_names = [
         f"http://{alb['DNSName']}"
         for alb in _get_aws_albs()
@@ -68,10 +70,10 @@ def set_aws_env_vars():
         f.write(f"AWS_ACCOUNT_ID={_get_aws_account_id()}\n")
         f.write(f"AWS_REGION={_get_aws_region}\n")
         f.write(f"ALB_DNS_NAME={alb_dns_names}\n")
-        f.write(f"ECS_CLUSTER={ecs_cluster_arns}\n")
-        f.write(f"ECS_SERVICE={ecs_service_arns}\n")
-        f.write(f"ECR_REPO={ecr_repo_names}\n")
-        f.write(f"ECR_URL={ecr_repo_uris}\n")
+        f.write(f"ECS_CLUSTER_ARN={ecs_cluster_arns}\n")
+        f.write(f"ECS_SERVICE_ARN={ecs_service_arns}\n")
+        f.write(f"ECR_REPO_NAME={ecr_repo_names}\n")
+        f.write(f"ECR_REPO_URL={ecr_repo_uris}\n")
 
     print("AWS environment variables set in .env file.")
 
