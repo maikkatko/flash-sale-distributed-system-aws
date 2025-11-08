@@ -89,15 +89,12 @@ func main() {
 	router := gin.Default()
 	router.GET("/health", func(c *gin.Context) { c.Status(http.StatusOK) })
 
-	// Group all product-related routes under /products
-	productRoutes := router.Group("/products")
-	{
-		productRoutes.POST("/", createProduct)
-		productRoutes.GET("/:id", getProductByID)
-		productRoutes.GET("/", getProducts) // For bulk fetching
-		productRoutes.PUT("/:id", updateProduct)
-		productRoutes.DELETE("/:id", deleteProduct)
-	}
+	// Define product routes
+	router.POST("/products", createProduct)
+	router.GET("/products", getProducts) // For bulk fetching by query ?ids=...
+	router.GET("/products/:id", getProductByID)
+	router.PUT("/products/:id", updateProduct)
+	router.DELETE("/products/:id", deleteProduct)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -114,19 +111,46 @@ func createProduct(c *gin.Context) {
 		return
 	}
 
-	result, err := db.Exec(
+	// Start a new transaction
+	tx, err := db.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
+		return
+	}
+
+	result, err := tx.Exec(
 		"INSERT INTO products (name, description, price, stock) VALUES (?, ?, ?, ?)",
 		newProduct.Name, newProduct.Description, newProduct.Price, newProduct.Stock,
 	)
 	if err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create product"})
 		return
 	}
 
-	id, _ := result.LastInsertId()
-	newProduct.ID = int(id)
+	id, err := result.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve last insert ID"})
+		return
+	}
 
-	c.JSON(http.StatusCreated, newProduct)
+	// Read the newly created product back from the database to get all generated fields
+	var createdProduct Product
+	err = tx.QueryRow("SELECT id, name, description, price, stock, created_at, updated_at FROM products WHERE id = ?", id).Scan(&createdProduct.ID, &createdProduct.Name, &createdProduct.Description, &createdProduct.Price, &createdProduct.Stock, &createdProduct.CreatedAt, &createdProduct.UpdatedAt)
+	if err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve created product"})
+		return
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, createdProduct)
 }
 
 // getProductByID retrieves a single product by its ID.

@@ -6,18 +6,21 @@ resource "aws_security_group" "rds" {
   description = "Allow traffic to the RDS instance"
   vpc_id      = var.vpc_id
 
-  # Allow inbound MySQL traffic from the ECS tasks' security group
-  ingress {
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [var.ecs_security_group_id]
-  }
-
   # Egress is open by default, which is fine.
   tags = {
     Name = "${var.service_name}-rds-sg"
   }
+}
+
+# Security group rule to allow inbound traffic from ECS tasks to RDS
+resource "aws_security_group_rule" "rds_ingress" {
+  type                     = "ingress"
+  from_port                = 3306
+  to_port                  = 3306
+  protocol                 = "tcp"
+  source_security_group_id = var.ecs_security_group_id
+  security_group_id        = aws_security_group.rds.id
+  description              = "Allow MySQL traffic from ECS tasks"
 }
 
 # Subnet group for RDS, placing it in private subnets
@@ -52,4 +55,3 @@ resource "aws_db_instance" "mysql" {
     Name = "${var.service_name}-db"
   }
 }
-
