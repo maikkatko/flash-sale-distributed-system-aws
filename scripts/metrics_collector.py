@@ -8,7 +8,6 @@ import pandas as pd
 
 load_dotenv()
 
-# Initialize CloudWatch client
 cloudwatch = boto3.client('cloudwatch', region_name='us-east-1')
 
 METRICS_CONFIG = {
@@ -63,7 +62,7 @@ class AWSMetricsCollector:
             print(f"[ERROR] Failed to get {metric_name}: {e}")
             return []
     
-    def get_ecs_metrics(self):
+    def _get_ecs_metrics(self):
         """Collect all ECS-related metrics"""
         print("[METRICS] Collecting ECS metrics...")
         
@@ -108,7 +107,7 @@ class AWSMetricsCollector:
         
         return metrics
     
-    def get_alb_metrics(self):
+    def _get_alb_metrics(self):
         """Collect all ALB-related metrics"""
         print("[METRICS] Collecting ALB metrics...")
         
@@ -175,7 +174,7 @@ class AWSMetricsCollector:
         
         return metrics
     
-    def get_rds_metrics(self):
+    def _get_rds_metrics(self):
         """Collect all RDS-related metrics"""
         print("[METRICS] Collecting RDS metrics...")
         
@@ -275,9 +274,9 @@ class AWSMetricsCollector:
                 'duration_seconds': duration_seconds,
                 'config': self.config
             },
-            'ecs': self.get_ecs_metrics(),
-            'alb': self.get_alb_metrics(),
-            'rds': self.get_rds_metrics()
+            'ecs': self._get_ecs_metrics(),
+            'alb': self._get_alb_metrics(),
+            'rds': self._get_rds_metrics()
         }
         
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')

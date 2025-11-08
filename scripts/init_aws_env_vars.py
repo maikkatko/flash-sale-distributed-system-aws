@@ -88,21 +88,8 @@ def _extract_target_group_name(tg_arn):
     parts = tg_arn.split(':')[-1].split('/')
     return f"targetgroup/{parts[1]}/{parts[2]}"
 
-def _extract_cluster_name(cluster_arn):
-    """
-    Extract cluster name from ARN
-    ARN format: arn:aws:ecs:region:account-id:cluster/my-cluster
-    Returns: my-cluster
-    """
-    return cluster_arn.split('/')[-1]
-
-def _extract_service_name(service_arn):
-    """
-    Extract service name from ARN
-    ARN format: arn:aws:ecs:region:account-id:service/cluster-name/service-name
-    Returns: service-name
-    """
-    return service_arn.split('/')[-1]
+def _extract_name_from_arn(arn):
+    return arn.split('/')[-1]
 
 def set_aws_env_vars():
     # Get all AWS resources
@@ -124,7 +111,7 @@ def set_aws_env_vars():
     
     # Extract ECS Cluster info
     cluster_arns = [cluster['clusterArn'] for cluster in clusters]
-    cluster_names = [_extract_cluster_name(arn) for arn in cluster_arns]
+    cluster_names = [_extract_name_from_arn(arn) for arn in cluster_arns]
     
     # Extract ECS Service info (from first cluster if multiple exist)
     service_arns = []
@@ -132,7 +119,7 @@ def set_aws_env_vars():
     if cluster_arns:
         services = _get_aws_ecs_services(cluster_arns[0])
         service_arns = [service['serviceArn'] for service in services]
-        service_names = [_extract_service_name(arn) for arn in service_arns]
+        service_names = [_extract_name_from_arn(arn) for arn in service_arns]
     
     # Extract RDS info
     rds_instance_ids = [db['DBInstanceIdentifier'] for db in rds_instances]

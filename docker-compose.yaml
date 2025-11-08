@@ -13,7 +13,8 @@ services:
       --html /results/reports/${TEST_NAME}.html  
       --users ${USERS:-1}  
       --spawn-rate ${SPAWN_RATE:-1}  
-      --run-time ${RUN_TIME:-60s}  
+      --run-time ${RUN_TIME:-60s}
+      --user-classes ${USER_CLASS:-NormalUser}
       --headless
     networks:
       - locust-network

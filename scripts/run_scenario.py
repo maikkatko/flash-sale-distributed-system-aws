@@ -2,10 +2,7 @@ import time
 import os
 import sys
 import subprocess
-import json
-
 import yaml
-
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,6 +13,7 @@ def run_scenario(scenario_name: str):
 
     if scenario_name not in scenarios:
         print(f"Scenario {scenario_name} not found!")
+        print(f"Available scenarios: {', '.join(scenarios.keys())}")
         return
 
     config = scenarios[scenario_name]
@@ -26,8 +24,7 @@ def run_scenario(scenario_name: str):
     env['USERS'] = str(config.get('users', 1))
     env['SPAWN_RATE'] = str(config.get('spawn_rate', 1))
     env['RUN_TIME'] = str(config.get('run_time', 60))
-    env['GET_WEIGHT'] = str(config.get('get_weight', 1))
-    env['POST_WEIGHT'] = str(config.get('post_weight', 1))
+    env['USER_CLASS'] = config.get('user_class', 'NormalUser')
     env['TEST_NAME'] = scenario_name
     env['LOCUSTFILE'] = 'locustfile.py'
     env['SERVICE_NAME'] = os.getenv('ECS_SERVICE', '')
@@ -35,25 +32,29 @@ def run_scenario(scenario_name: str):
 
     print(f"\n{'='*60}")
     print(f"Running {scenario_name} scenario:")
+    print(f"Description: {config.get('description', 'N/A')}")
+    print(f"User Class: {env['USER_CLASS']}")
+    print(f"Users: {env['USERS']}, Spawn Rate: {env['SPAWN_RATE']}")
+    print(f"Workers: {env['WORKERS']}, Run Time: {env['RUN_TIME']}s")
     print(f"{'='*60}\n")
 
     subprocess.run(['docker-compose', 'up', '-d', '--build'],
                    check=False, env=env)
 
-    # Wait for test to complete
     run_time = config.get('run_time', 60)
-
     print(f"Test running for {run_time} seconds...")
 
     try:
-        time.sleep(run_time + 5)
-    except (subprocess.CalledProcessError, KeyboardInterrupt):
+        time.sleep(run_time + 10)  # Extra buffer for cleanup
+    except KeyboardInterrupt:
         print("\nStopping test...")
-        sys.exit(1)
     finally:
         subprocess.run(['docker-compose', 'down'], check=False, env=env)
-        print(f"Test complete! Results saved to {config.get('test_file')}")
+        print(f"\nTest complete! Results saved to results/locust_data/{scenario_name}_test_results.json")
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python run_scenario.py <scenario_name>")
+        sys.exit(1)
     run_scenario(sys.argv[1])

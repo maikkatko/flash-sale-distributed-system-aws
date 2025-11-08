@@ -1,13 +1,47 @@
-basic test:
+baseline:
   workers: 1
-  users: 1
-  spawn_rate: 1
-  run_time: 60
-  description: "basic test for baseline"
+  users: 50
+  spawn_rate: 5
+  run_time: 300
+  user_class: "NormalUser"
+  description: "Normal sales - establish <100ms p95 baseline"
 
-flash-sale:
+high_contention:
+  workers: 2
+  users: 100
+  spawn_rate: 100
+  run_time: 60
+  user_class: "AggressiveBuyer"
+  description: "100 concurrent users fighting for 10 items"
+
+thundering_herd:
   workers: 4
   users: 500
-  spawn_rate: 1
+  spawn_rate: 500
   run_time: 180
-  description: "flash sale lasting 3 minutes"
+  user_class: "AggressiveBuyer"
+  description: "Flash sale - test autoscaling from 10→500 RPS"
+
+sustained_load:
+  workers: 2
+  users: 200
+  spawn_rate: 20
+  run_time: 600
+  user_class: "NormalUser"
+  description: "Verify stability after scaling up"
+
+chaos_baseline:
+  workers: 2
+  users: 100
+  spawn_rate: 10
+  run_time: 300
+  user_class: "ChaosTestUser"
+  description: "Moderate load during service failure injection"
+
+fairness_10x_demand:
+  workers: 3
+  users: 300
+  spawn_rate: 100
+  run_time: 120
+  user_class: "AggressiveBuyer"
+  description: "300 users competing for 30 items - test FIFO vs FCFS"
