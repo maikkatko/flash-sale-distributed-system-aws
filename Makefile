@@ -8,16 +8,19 @@ setup:
 	@if not exist results\locust_reports mkdir results\locust_reports
 	@if not exist results\charts mkdir results\charts
 	@pip install -r requirements.txt || pip3 install -r requirements.txt
-	@terraform -chdir=terraform plan
-	@terraform -chdir=terraform apply -auto-approve
+	@terraform -chdir=flash-sale-platform/terraform plan
+	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve
 	@python scripts/init_aws_env_vars.py
 	@echo Environment ready for testing
 
 setup-aws:
-	@terraform -chdir=terraform plan
-	@terraform -chdir=terraform apply -auto-approve
+	@terraform -chdir=flash-sale-platform/terraform plan
+	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve
 	@python scripts/init_aws_env_vars.py
 	@echo AWS infrastructure setup complete
+
+initialize-aws-env-vars:
+	@python scripts/init_aws_env_vars.py
 
 # Individual test scenarios
 test-baseline:
@@ -96,7 +99,7 @@ restart-server:
 clean:
 	@docker-compose down 2>nul || echo.
 	@docker system prune -f
-	@terraform -chdir=terraform destroy -auto-approve
+	@terraform -chdir=flash-sale-platform/terraform destroy -auto-approve
 	@echo Cleanup complete and AWS infrastructure destroyed!
 
 help:

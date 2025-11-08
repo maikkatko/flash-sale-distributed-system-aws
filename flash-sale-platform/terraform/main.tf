@@ -60,7 +60,7 @@ module "ecs" {
 resource "docker_image" "app" {
   name = "${module.ecr.repository_url}:latest"
   build {
-    context    = "../src"
+    context    = "../src/products"
     platform   = "linux/amd64"
     no_cache   = true
   }

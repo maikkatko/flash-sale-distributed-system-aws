@@ -10,7 +10,7 @@ services:
       --host ${API_HOST}  
       --csv /results/raw_locust_data/${TEST_NAME}  
       --csv-full-history  
-      --html /results/reports/${TEST_NAME}.html  
+      --html /results/locust_reports/${TEST_NAME}.html  
       --users ${USERS:-1}  
       --spawn-rate ${SPAWN_RATE:-1}  
       --run-time ${RUN_TIME:-60s}
