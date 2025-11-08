@@ -19,5 +19,5 @@ RUN CGO_ENABLED=0 GOOS=linux go build -tags=products -a -o products-api .
 FROM alpine:latest
 WORKDIR /root/
 COPY --from=builder /app/products-api .
-EXPOSE 8080
+EXPOSE 8081
 CMD ["./products-api"]
