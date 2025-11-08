@@ -1,0 +1,33 @@
+services:
+  locust-master:
+    image: locustio/locust
+    volumes:
+      - ./:/mnt/locust
+      - ./results:/results
+    command: >
+      -f /mnt/locust/${LOCUSTFILE:-locustfile.py} --master  --host ${API_HOST}  --csv /results/raw_locust_data/${TEST_NAME}  --csv-full-history  --html /results/reports/${TEST_NAME}.html  --users ${USERS:-1}  --spawn-rate ${SPAWN_RATE:-1}  --run-time ${RUN_TIME:-60s}  --headless
+    networks:
+      - locust-network
+    environment:
+      - TEST_NAME=${TEST_NAME}
+      - TEST_RESULTS_FILE_NAME=${TEST_RESULTS_FILE_NAME}
+
+  locust-worker:
+    image: locustio/locust
+    volumes:
+      - ./:/mnt/locust
+    command: >
+      -f /mnt/locust/${LOCUSTFILE:-locustfile.py}  --worker   --master-host locust-master
+    networks:
+      - locust-network
+    depends_on:
+      - locust-master
+    deploy:
+      replicas: ${WORKERS:-1}
+    environment:
+      - TEST_NAME=${TEST_NAME}
+      - TEST_RESULTS_FILE_NAME=${TEST_RESULTS_FILE_NAME}
+
+networks:
+  locust-network:
+    driver: bridge
