@@ -3,14 +3,22 @@ import boto3
 import json
 import time
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
-from locust import HttpUser, task, events
+from datetime import datetime
 import pandas as pd
 
 load_dotenv()
 
 # Initialize CloudWatch client
-cloudwatch = boto3.client('cloudwatch', region_name='us-east-1')  # Change to your region
+cloudwatch = boto3.client('cloudwatch', region_name='us-east-1')
+
+METRICS_CONFIG = {
+    'cluster_name': os.getenv('CLUSTER_NAME'),
+    'service_name': os.getenv('SERVICE_NAME'),
+    'target_group_name': os.getenv('TARGET_GROUP_NAME'),
+    'load_balancer_name': os.getenv('LOAD_BALANCER_NAME'),
+    'rds_instance_id': os.getenv('RDS_INSTANCE_ID'),
+    'region': os.getenv('AWS_REGION')
+}
 
 class AWSMetricsCollector:
     def __init__(self, config):
@@ -252,11 +260,19 @@ class AWSMetricsCollector:
         """Export all metrics after test completes"""
         print("[METRICS] Exporting all metrics...")
         
+        start_iso = self.test_start_time.isoformat() if self.test_start_time else None
+        end_iso = self.test_end_time.isoformat() if self.test_end_time else None
+        duration_seconds = (
+            (self.test_end_time - self.test_start_time).total_seconds()
+            if self.test_start_time and self.test_end_time
+            else None
+        )
+
         all_metrics = {
             'test_info': {
-                'start_time': self.test_start_time.isoformat(),
-                'end_time': self.test_end_time.isoformat(),
-                'duration_seconds': (self.test_end_time - self.test_start_time).total_seconds(),
+                'start_time': start_iso,
+                'end_time': end_iso,
+                'duration_seconds': duration_seconds,
                 'config': self.config
             },
             'ecs': self.get_ecs_metrics(),
@@ -329,18 +345,5 @@ class AWSMetricsCollector:
             df = pd.DataFrame(rds_rows)
             df.to_csv(f'rds_metrics_{timestamp}.csv', index=False)
             print(f"[METRICS] Exported RDS metrics to rds_metrics_{timestamp}.csv")
-
-
-# === LOCUST INTEGRATION ===
-
-# Configuration - UPDATE THESE VALUES
-METRICS_CONFIG = {
-    'cluster_name': os.getenv('ECS_CLUSTER'),
-    'service_name': os.getenv('ECS_SERVICE'),
-    'target_group_name': 'targetgroup/your-tg/1234567890abcdef',
-    'load_balancer_name': 'app/your-alb/1234567890abcdef',
-    'rds_instance_id': os.getenv('ECS_CLUSTER'),
-    'region': os.getenv('AWS_REGION')
-}
 
 metrics_collector = AWSMetricsCollector(METRICS_CONFIG)

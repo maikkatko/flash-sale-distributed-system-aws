@@ -2,7 +2,9 @@ import os
 import json
 import random
 from datetime import datetime
+import time
 from locust import FastHttpUser, task, between, events
+from scripts.metrics_collector import metrics_collector
 
 created_carts = []
 unused_carts = []
@@ -11,7 +13,6 @@ CREATE_COUNT = 0
 ADD_COUNT = 0
 GET_COUNT = 0
 MAX_OPERATIONS = 50
-
 
 class ShoppingCartUser(FastHttpUser):
     host = os.getenv('API_HOST')
@@ -130,25 +131,16 @@ class ShoppingCartUser(FastHttpUser):
             GET_COUNT += 1
 
 
+@events.test_start.add_listener
+def on_test_start(environment, **kwargs):
+    metrics_collector.start_collection()
+
+
 @events.test_stop.add_listener
-def on_test_stopping(environment, **kwargs):
-    """Save results when test completes - runs on workers"""
-    print(f"\n{'='*60}")
-    print("IN ON_TEST_STOPPING")
-    print(f"test_results length: {len(test_results)}")
-    print(f"Creates: {CREATE_COUNT}, Adds: {ADD_COUNT}, Gets: {GET_COUNT}")
-    print(f"{'='*60}\n")
-
-    if not test_results:
-        print("WARNING: test_results is empty!")
-        return
-
-    filename = os.getenv('TEST_RESULTS_FILE_NAME', 'mysql_test_results.json')
-    filepath = os.path.join("/mnt/locust/results/db_data", filename)
-
-    print(f"About to write {len(test_results)} results to {filepath}")
-
-    with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(test_results, f, indent=2)
-
-    print(f"Successfully saved to {filepath}")
+def on_test_stop(environment, **kwargs):
+    metrics_collector.stop_collection()
+    
+    print("[METRICS] Waiting 2 minutes for CloudWatch to finalize data...")
+    time.sleep(120)
+    
+    metrics_collector.export_all_metrics(output_format='json')
