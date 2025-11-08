@@ -5,7 +5,16 @@ services:
       - ./:/mnt/locust
       - ./results:/results
     command: >
-      -f /mnt/locust/${LOCUSTFILE:-locustfile.py} --master  --host ${API_HOST}  --csv /results/raw_locust_data/${TEST_NAME}  --csv-full-history  --html /results/reports/${TEST_NAME}.html  --users ${USERS:-1}  --spawn-rate ${SPAWN_RATE:-1}  --run-time ${RUN_TIME:-60s}  --headless
+      -f /mnt/locust/${LOCUSTFILE:-locustfile.py} 
+      --master  
+      --host ${API_HOST}  
+      --csv /results/raw_locust_data/${TEST_NAME}  
+      --csv-full-history  
+      --html /results/reports/${TEST_NAME}.html  
+      --users ${USERS:-1}  
+      --spawn-rate ${SPAWN_RATE:-1}  
+      --run-time ${RUN_TIME:-60s}  
+      --headless
     networks:
       - locust-network
     environment:
@@ -17,7 +26,9 @@ services:
     volumes:
       - ./:/mnt/locust
     command: >
-      -f /mnt/locust/${LOCUSTFILE:-locustfile.py}  --worker   --master-host locust-master
+      -f /mnt/locust/${LOCUSTFILE:-locustfile.py}  
+      --worker   
+      --master-host locust-master
     networks:
       - locust-network
     depends_on:
