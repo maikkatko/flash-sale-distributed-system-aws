@@ -17,7 +17,7 @@ class NormalUser(HttpUser):
     host = os.getenv('API_HOST')
     wait_time = between(1, 3)
     
-    @task(40)
+    @task(35)
     def browse_product(self):
         start_time = datetime.now()
         
@@ -29,12 +29,50 @@ class NormalUser(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
+
+            if response.status_code >= 400:
+                print(f"GET failed: {response.status_code} - {response.text}")
+                response.failure(f"Got {response.status_code}")
             
             test_results.append({
                 "operation": "browse_product",
                 "user_class": "NormalUser",
                 "response_time": round(response_time, 2),
                 "success": response.status_code == 200,
+                "status_code": response.status_code,
+                "timestamp": start_time.isoformat() + "Z"
+            })
+
+    @task(5)
+    def update_product(self):
+        """Simulates inventory decrement under high contention"""
+        start_time = datetime.now()
+        
+        # All buyers fight over same 3 products
+        product_id = random.randint(1, 3)
+        
+        with self.client.put(
+            f"/products/{product_id}",
+            json={
+                "name": f"Flash Sale Item {product_id}",
+                "description": "High demand item",
+                "price": 499.99,
+                "stock": random.randint(0, 5)  # Simulate inventory changes
+            },
+            catch_response=True
+        ) as response:
+            end_time = datetime.now()
+            response_time = (end_time - start_time).total_seconds() * 1000
+
+            if response.status_code >= 400:
+                print(f"PUT failed: {response.status_code} - {response.text}")
+                response.failure(f"Got {response.status_code}")
+            
+            test_results.append({
+                "operation": "update_product",
+                "user_class": "AggressiveBuyer",
+                "response_time": round(response_time, 2),
+                "success": response.status_code == 204,
                 "status_code": response.status_code,
                 "timestamp": start_time.isoformat() + "Z"
             })
@@ -49,6 +87,10 @@ class NormalUser(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
+
+            if response.status_code >= 400:
+                print(f"GET failed: {response.status_code} - {response.text}")
+                response.failure(f"Got {response.status_code}")
             
             test_results.append({
                 "operation": "browse_catalog",
@@ -76,6 +118,10 @@ class NormalUser(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
+
+            if response.status_code >= 400:
+                print(f"POST failed: {response.status_code} - {response.text}")
+                response.failure(f"Got {response.status_code}")
             
             test_results.append({
                 "operation": "create_product",
@@ -126,6 +172,10 @@ class AggressiveBuyer(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
+
+            if response.status_code >= 400:
+                print(f"GET failed: {response.status_code} - {response.text}")
+                response.failure(f"Got {response.status_code}")
             
             test_results.append({
                 "operation": "browse_product",
@@ -156,6 +206,10 @@ class AggressiveBuyer(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
+
+            if response.status_code >= 400:
+                print(f"PUT failed: {response.status_code} - {response.text}")
+                response.failure(f"Got {response.status_code}")
             
             test_results.append({
                 "operation": "update_product",
@@ -183,6 +237,10 @@ class AggressiveBuyer(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
+
+            if response.status_code >= 400:
+                print(f"POST failed: {response.status_code} - {response.text}")
+                response.failure(f"Got {response.status_code}")
             
             test_results.append({
                 "operation": "create_product",
@@ -203,6 +261,10 @@ class AggressiveBuyer(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
+
+            if response.status_code >= 400:
+                print(f"GET failed: {response.status_code} - {response.text}")
+                response.failure(f"Got {response.status_code}")
             
             test_results.append({
                 "operation": "browse_catalog",
@@ -232,6 +294,10 @@ class ChaosTestUser(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
+
+            if response.status_code >= 400:
+                print(f"GET failed: {response.status_code} - {response.text}")
+                response.failure(f"Got {response.status_code}")
             
             test_results.append({
                 "operation": "browse_product",
@@ -261,6 +327,10 @@ class ChaosTestUser(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
+
+            if response.status_code >= 400:
+                print(f"PUT failed: {response.status_code} - {response.text}")
+                response.failure(f"Got {response.status_code}")
             
             test_results.append({
                 "operation": "update_product",
@@ -281,6 +351,10 @@ class ChaosTestUser(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
+
+            if response.status_code >= 400:
+                print(f"GET failed: {response.status_code} - {response.text}")
+                response.failure(f"Got {response.status_code}")
             
             test_results.append({
                 "operation": "browse_catalog",
@@ -312,7 +386,7 @@ class ChaosTestUser(HttpUser):
             })
 
 
-@events.test_start.add_listener
+@events.test_start.add_listener 
 def on_test_start(environment, **kwargs):
     """Start CloudWatch metrics collection when test begins"""
     print(f"\n{'='*60}")

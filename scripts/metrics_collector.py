@@ -282,7 +282,7 @@ class AWSMetricsCollector:
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
         if output_format == 'json':
-            filename = f'cloudwatch_metrics_{timestamp}.json'
+            filename = f'results/cloudwatch_metrics/cloudwatch_metrics_{timestamp}.json'
             with open(filename, 'w') as f:
                 json.dump(all_metrics, f, indent=2, default=str)
             print(f"[METRICS] Exported to {filename}")

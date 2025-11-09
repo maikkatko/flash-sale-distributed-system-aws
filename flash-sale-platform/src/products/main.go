@@ -65,16 +65,16 @@ func initDB() {
 
 	// Schema for products table
 	createProductsTable := `
-    CREATE TABLE IF NOT EXISTS products (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        description TEXT,
-        price DECIMAL(10, 2) NOT NULL,
-        stock INT NOT NULL DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_name (name)
-    ) ENGINE=InnoDB;`
+		CREATE TABLE IF NOT EXISTS products (
+			id INT AUTO_INCREMENT PRIMARY KEY,
+			name VARCHAR(255) NOT NULL,
+			description TEXT,
+			price DECIMAL(10, 2) NOT NULL,
+			stock INT NOT NULL DEFAULT 0,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			INDEX idx_name (name)
+		) ENGINE=InnoDB;`
 
 	if _, err := db.Exec(createProductsTable); err != nil {
 		log.Fatalf("Failed to create products table: %v", err)
