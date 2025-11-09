@@ -1,10 +1,10 @@
 variable "service_name" {
-  description = "Name of the ECS service"
+  description = "The name of the service."
   type        = string
 }
 
 variable "image" {
-  description = "Docker image to run"
+  description = "The Docker image to use for the task."
   type        = string
 }
 
@@ -43,39 +43,31 @@ variable "region" {
   type        = string
 }
 
-# NEW: ALB Integration
 variable "target_group_arn" {
   description = "ALB target group ARN"
   type        = string
 }
 
-# NEW: Auto-scaling parameters
 variable "min_capacity" {
-  description = "Minimum number of tasks"
+  description = "Minimum number of tasks for auto-scaling."
   type        = number
-  default     = 2
 }
 
 variable "max_capacity" {
-  description = "Maximum number of tasks"
+  description = "Maximum number of tasks for auto-scaling."
   type        = number
-  default     = 4
 }
 
 variable "cpu_target_value" {
-  description = "Target CPU utilization percentage for auto-scaling"
+  description = "Target CPU utilization for scaling."
   type        = number
-  default     = 70
 }
 
-variable "scale_out_cooldown" {
-  description = "Cooldown period (seconds) after scale-out"
-  type        = number
-  default     = 300
-}
+variable "scale_in_cooldown" { type = number }
+variable "scale_out_cooldown" { type = number }
 
-variable "scale_in_cooldown" {
-  description = "Cooldown period (seconds) after scale-in"
-  type        = number
-  default     = 300
+variable "environment_variables" {
+  description = "A map of environment variables to pass to the container."
+  type        = map(string)
+  default     = {}
 }
