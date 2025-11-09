@@ -20,5 +20,5 @@ output "alb_zone_id" {
 
 output "alb_arn_suffix" {
   description = "ALB ARN suffix for metrics"
-  value       = split("/", aws_lb.main.arn)[1]
+  value       = split("loadbalancer/", aws_lb.this.arn)[1]
 }

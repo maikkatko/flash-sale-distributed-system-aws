@@ -1,10 +1,20 @@
-baseline:
+baseline_target_tracking:
   workers: 1
   users: 50
   spawn_rate: 5
   run_time: 300
   user_class: "NormalUser"
-  description: "Normal sales - establish <100ms p95 baseline"
+  scaling_policy: "target_tracking"
+  description: "Normal sales - establish <100ms p95 baseline with target tracking"
+
+baseline_step_scaling:
+  workers: 1
+  users: 50
+  spawn_rate: 5
+  run_time: 300
+  user_class: "NormalUser"
+  scaling_policy: "step_scaling"
+  description: "Normal sales - establish <100ms p95 baseline with step scaling"
 
 high_contention:
   workers: 2
@@ -14,13 +24,23 @@ high_contention:
   user_class: "AggressiveBuyer"
   description: "100 concurrent users fighting for 10 items"
 
-thundering_herd:
+thundering_herd_target_tracking:
   workers: 4
   users: 500
   spawn_rate: 500
   run_time: 180
   user_class: "AggressiveBuyer"
-  description: "Flash sale - test autoscaling from 10→500 RPS"
+  scaling_policy: "target_tracking"
+  description: "Flash sale - test autoscaling from 10→500 RPS with target tracking"
+
+thundering_herd_step_scaling:
+  workers: 4
+  users: 500
+  spawn_rate: 500
+  run_time: 180
+  user_class: "AggressiveBuyer"
+  scaling_policy: "step_scaling"
+  description: "Flash sale - test autoscaling from 10→500 RPS with step scaling"
 
 sustained_load:
   workers: 2

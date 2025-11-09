@@ -15,9 +15,7 @@ setup:
 	@echo Environment ready for testing
 
 setup-aws:
-	@terraform -chdir=flash-sale-platform/terraform init
-	@terraform -chdir=flash-sale-platform/terraform plan
-	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve
+	@python scripts/setup_aws.py
 	@python scripts/init_aws_env_vars.py
 	@echo AWS infrastructure setup complete
 
@@ -33,6 +31,12 @@ seed-data:
 test-baseline: seed-data
 	@python scripts/run_scenario.py baseline
 
+test-baseline-target: seed-data
+	@python scripts/run_scenario.py baseline_target_tracking
+
+test-baseline-step: seed-data
+	@python scripts/run_scenario.py baseline_step_scaling
+
 test-high-contention:
 	@echo === High Contention Test (Exp 1) ===
 	@python scripts/run_scenario.py high_contention
@@ -42,12 +46,10 @@ test-thundering-herd:
 	@python scripts/run_scenario.py thundering_herd
 
 test-thundering-herd-target:
-	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve -var="scaling_policy_type=target_tracking"
-	@python scripts/run_scenario.py thundering_herd
+	@python scripts/run_scenario.py thundering_herd_target_tracking
 
 test-thundering-herd-step:
-	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve -var="scaling_policy_type=step_scaling"
-	@python scripts/run_scenario.py thundering_herd
+	@python scripts/run_scenario.py thundering_herd_step_scaling
 
 test-sustained:
 	@echo === Sustained Load Test (Exp 2) ===
