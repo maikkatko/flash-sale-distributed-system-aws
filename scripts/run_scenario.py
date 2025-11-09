@@ -32,7 +32,7 @@ def _wait_for_ecs_stability(service_name, cluster_name, timeout=300):
         print("Proceeding anyway after 30s buffer...")
         time.sleep(30)
 
-def _configure_scaling_policy(policy_type):
+def _configure_scaling_policy(env, policy_type):
     """Configure autoscaling policy before test"""
     print(f"Applying scaling policy: {policy_type}...")
     
@@ -42,7 +42,7 @@ def _configure_scaling_policy(policy_type):
         "apply",
         "-auto-approve",
         f"-var=scaling_policy_type={policy_type}"
-    ], check=True, capture_output=True, text=True)
+    ], env=env, check=True, capture_output=True, text=True)
     
     print("Terraform apply complete")
     
@@ -72,8 +72,11 @@ def run_scenario(scenario_name: str):
     env['LOCUSTFILE'] = 'locustfile.py'
     env['SERVICE_NAME'] = os.getenv('SERVICE_NAME', '')
     env['TEST_RESULTS_FILE_NAME'] = f"{scenario_name}_test_results.json"
+    env['TF_VAR_db_name'] = os.getenv('TF_VAR_db_name', 'flashsale')
+    env['TF_VAR_db_username'] = os.getenv('TF_VAR_db_username', 'admin')
+    env['TF_VAR_db_password'] = os.getenv('TF_VAR_db_password', 'SecurePassword123!')
 
-    _configure_scaling_policy(str(config.get('scaling_policy', 'target_tracking')))
+    _configure_scaling_policy(env, str(config.get('scaling_policy', 'target_tracking')))
 
     print(f"\n{'='*60}")
     print(f"Running {scenario_name} scenario:")

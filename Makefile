@@ -19,6 +19,9 @@ setup-aws:
 	@python scripts/init_aws_env_vars.py
 	@echo AWS infrastructure setup complete
 
+update-scaling-policy:
+	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve -var=scaling_policy_type=step_scaling
+
 init-tf:
 	@terraform -chdir=flash-sale-platform/terraform init
 
@@ -114,7 +117,7 @@ restart-server:
 clean:
 	@docker-compose down 2>nul || echo.
 	@docker system prune -f
-	@terraform -chdir=flash-sale-platform/terraform destroy -auto-approve
+	@python scripts/destroy_aws.py
 	@echo Cleanup complete and AWS infrastructure destroyed!
 
 help:

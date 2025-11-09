@@ -18,6 +18,6 @@ products = [
 for product in products:
     response = requests.post(f"{API_HOST}/products", json=product)
     if response.status_code == 201:
-        print(f"✓ Created: {product['name']}")
+        print(f"Created: {product['name']}")
     else:
-        print(f"✗ Failed: {product['name']} - {response.status_code}")
+        print(f"Failed: {product['name']} - {response.status_code}")
