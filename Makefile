@@ -41,6 +41,14 @@ test-thundering-herd:
 	@echo === Thundering Herd Test (Exp 2) ===
 	@python scripts/run_scenario.py thundering_herd
 
+test-thundering-herd-target:
+	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve -var="scaling_policy_type=target_tracking"
+	@python scripts/run_scenario.py thundering_herd
+
+test-thundering-herd-step:
+	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve -var="scaling_policy_type=step_scaling"
+	@python scripts/run_scenario.py thundering_herd
+
 test-sustained:
 	@echo === Sustained Load Test (Exp 2) ===
 	@python scripts/run_scenario.py sustained_load

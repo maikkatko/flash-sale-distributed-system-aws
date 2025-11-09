@@ -80,3 +80,14 @@ variable "db_password" {
   type        = string
   sensitive   = true
 }
+
+variable "scaling_policy_type" {
+  description = "Scaling policy: target_tracking or step_scaling"
+  type        = string
+  default     = "target_tracking"
+  
+  validation {
+    condition     = contains(["target_tracking", "step_scaling"], var.scaling_policy_type)
+    error_message = "Must be target_tracking or step_scaling"
+  }
+}

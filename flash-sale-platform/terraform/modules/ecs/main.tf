@@ -83,6 +83,7 @@ resource "aws_appautoscaling_target" "ecs_target" {
 
 # Auto Scaling Policy - NEW!
 resource "aws_appautoscaling_policy" "cpu_scaling" {
+  count              = var.scaling_policy_type == "target_tracking" ? 1 : 0
   name               = "${var.service_name}-cpu-scaling"
   policy_type        = "TargetTrackingScaling"
   resource_id        = aws_appautoscaling_target.ecs_target.resource_id
@@ -99,3 +100,52 @@ resource "aws_appautoscaling_policy" "cpu_scaling" {
     scale_out_cooldown = var.scale_out_cooldown
   }
 }
+
+resource "aws_appautoscaling_policy" "ecs_requests" {
+  count              = var.scaling_policy_type == "step_scaling" ? 1 : 0
+  name               = "${var.service_name}-request-step-scaling"
+  policy_type        = "StepScaling"
+  resource_id        = aws_appautoscaling_target.ecs.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs.service_namespace
+
+  step_scaling_policy_configuration {
+    adjustment_type         = "ChangeInCapacity"
+    cooldown                = 60
+    metric_aggregation_type = "Average"
+
+    step_adjustment {
+      scaling_adjustment          = 2
+      metric_interval_lower_bound = 100
+      metric_interval_upper_bound = 200
+    }
+    step_adjustment {
+      scaling_adjustment          = 4
+      metric_interval_lower_bound = 200
+      metric_interval_upper_bound = 300
+    }
+    step_adjustment {
+      scaling_adjustment          = 6
+      metric_interval_lower_bound = 300
+    }
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "requests_high" {
+  count               = var.scaling_policy_type == "step_scaling" ? 1 : 0
+  alarm_name          = "${var.service_name}-high-requests"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "RequestCountPerTarget"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 100
+  
+  dimensions = {
+    TargetGroup  = var.target_group_arn
+    LoadBalancer = var.alb_arn_suffix
+  }
+
+  alarm_actions = [aws_appautoscaling_policy.ecs_requests[0].arn]
+} 
