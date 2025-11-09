@@ -1,3 +1,4 @@
+from pathlib import Path
 import time
 import os
 import sys
@@ -5,7 +6,8 @@ import subprocess
 import yaml
 from dotenv import load_dotenv
 
-load_dotenv()
+project_root = Path(__file__).parent.parent
+load_dotenv(dotenv_path=project_root / '.env')
 
 def run_scenario(scenario_name: str):
     with open('scenarios.yaml', 'r', encoding='utf-8') as f:
@@ -27,7 +29,7 @@ def run_scenario(scenario_name: str):
     env['USER_CLASS'] = config.get('user_class', 'NormalUser')
     env['TEST_NAME'] = scenario_name
     env['LOCUSTFILE'] = 'locustfile.py'
-    env['SERVICE_NAME'] = os.getenv('ECS_SERVICE', '')
+    env['SERVICE_NAME'] = os.getenv('SERVICE_NAME', '')
     env['TEST_RESULTS_FILE_NAME'] = f"{scenario_name}_test_results.json"
 
     print(f"\n{'='*60}")
@@ -39,7 +41,7 @@ def run_scenario(scenario_name: str):
     print(f"{'='*60}\n")
 
     subprocess.run(['docker-compose', 'up', '-d', '--build'],
-                   check=False, env=env)
+                check=False, env=env)
 
     run_time = config.get('run_time', 60)
     print(f"Test running for {run_time} seconds...")

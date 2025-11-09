@@ -1,6 +1,6 @@
 services:
   locust-master:
-    image: locustio/locust
+    build: .
     volumes:
       - ./:/mnt/locust
       - ./results:/results
@@ -14,16 +14,16 @@ services:
       --users ${USERS:-1}  
       --spawn-rate ${SPAWN_RATE:-1}  
       --run-time ${RUN_TIME:-60s}
-      --user-classes ${USER_CLASS:-NormalUser}
       --headless
     networks:
       - locust-network
     environment:
       - TEST_NAME=${TEST_NAME}
       - TEST_RESULTS_FILE_NAME=${TEST_RESULTS_FILE_NAME}
+      - USER_CLASS=${USER_CLASS}
 
   locust-worker:
-    image: locustio/locust
+    build: .
     volumes:
       - ./:/mnt/locust
     command: >
@@ -39,6 +39,7 @@ services:
     environment:
       - TEST_NAME=${TEST_NAME}
       - TEST_RESULTS_FILE_NAME=${TEST_RESULTS_FILE_NAME}
+      - USER_CLASS=${USER_CLASS}
 
 networks:
   locust-network:

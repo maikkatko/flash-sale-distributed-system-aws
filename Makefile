@@ -8,23 +8,29 @@ setup:
 	@if not exist results\locust_reports mkdir results\locust_reports
 	@if not exist results\charts mkdir results\charts
 	@pip install -r requirements.txt || pip3 install -r requirements.txt
+	@terraform -chdir=flash-sale-platform/terraform init
 	@terraform -chdir=flash-sale-platform/terraform plan
 	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve
 	@python scripts/init_aws_env_vars.py
 	@echo Environment ready for testing
 
 setup-aws:
+	@terraform -chdir=flash-sale-platform/terraform init
 	@terraform -chdir=flash-sale-platform/terraform plan
 	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve
 	@python scripts/init_aws_env_vars.py
 	@echo AWS infrastructure setup complete
 
-initialize-aws-env-vars:
+init-tf:
+	@terraform -chdir=flash-sale-platform/terraform init
+
+init-aws-vars:
 	@python scripts/init_aws_env_vars.py
 
-# Individual test scenarios
-test-baseline:
-	@echo === Baseline Test ===
+seed-data:
+	@python scripts/seed_products.py
+
+test-baseline: seed-data
 	@python scripts/run_scenario.py baseline
 
 test-high-contention:
