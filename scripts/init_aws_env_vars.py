@@ -157,6 +157,11 @@ def set_aws_env_vars():
         f.write(f"ECR_REPO_NAME={ecr_repo_names[0] if ecr_repo_names else ''}\n")
         f.write(f"ECR_REPO_URL={ecr_repo_uris[0] if ecr_repo_uris else ''}\n")
 
+        # RDS DB Info
+        f.write(f"TF_VAR_db_name=flashsale\n")
+        f.write(f"TF_VAR_db_username=admin\n")
+        f.write(f"TF_VAR_db_password=SecurePassword123!\n")
+
     print("AWS environment variables set in .env file.")
     print("\n=== CloudWatch Metrics Configuration ===")
     print(f"Region: {region}")

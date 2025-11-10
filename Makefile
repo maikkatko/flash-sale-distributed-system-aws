@@ -8,24 +8,37 @@ setup:
 	@if not exist results\locust_reports mkdir results\locust_reports
 	@if not exist results\charts mkdir results\charts
 	@pip install -r requirements.txt || pip3 install -r requirements.txt
+	@terraform -chdir=flash-sale-platform/terraform init
 	@terraform -chdir=flash-sale-platform/terraform plan
 	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve
 	@python scripts/init_aws_env_vars.py
 	@echo Environment ready for testing
 
 setup-aws:
-	@terraform -chdir=flash-sale-platform/terraform plan
-	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve
+	@python scripts/setup_aws.py
 	@python scripts/init_aws_env_vars.py
 	@echo AWS infrastructure setup complete
 
-initialize-aws-env-vars:
+update-scaling-policy:
+	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve -var=scaling_policy_type=step_scaling
+
+init-tf:
+	@terraform -chdir=flash-sale-platform/terraform init
+
+init-aws-vars:
 	@python scripts/init_aws_env_vars.py
 
-# Individual test scenarios
-test-baseline:
-	@echo === Baseline Test ===
+seed-data:
+	@python scripts/seed_products.py
+
+test-baseline: seed-data
 	@python scripts/run_scenario.py baseline
+
+test-baseline-target: seed-data
+	@python scripts/run_scenario.py baseline_target_tracking
+
+test-baseline-step: seed-data
+	@python scripts/run_scenario.py baseline_step_scaling
 
 test-high-contention:
 	@echo === High Contention Test (Exp 1) ===
@@ -34,6 +47,12 @@ test-high-contention:
 test-thundering-herd:
 	@echo === Thundering Herd Test (Exp 2) ===
 	@python scripts/run_scenario.py thundering_herd
+
+test-thundering-herd-target:
+	@python scripts/run_scenario.py thundering_herd_target_tracking
+
+test-thundering-herd-step:
+	@python scripts/run_scenario.py thundering_herd_step_scaling
 
 test-sustained:
 	@echo === Sustained Load Test (Exp 2) ===
@@ -89,17 +108,16 @@ analyze:
 
 update-server:
 	@echo === Updating Server Service ===
-	@python scripts/update_ecr_ecs.py server
+	@python scripts/update_ecr_ecs.py
 
 restart-server:
 	@echo === Restarting Server Service ===
-	@powershell.exe -Command "aws ecs update-service --cluster flash-sale-cluster --service flash-sale-api --force-new-deployment" > $null
-	@echo Server service restarted
+	@python scripts/restart_ecs.py
 
 clean:
 	@docker-compose down 2>nul || echo.
 	@docker system prune -f
-	@terraform -chdir=flash-sale-platform/terraform destroy -auto-approve
+	@python scripts/destroy_aws.py
 	@echo Cleanup complete and AWS infrastructure destroyed!
 
 help:

@@ -71,3 +71,19 @@ variable "environment_variables" {
   type        = map(string)
   default     = {}
 }
+
+variable "scaling_policy_type" {
+  description = "Scaling policy: target_tracking or step_scaling"
+  type        = string
+  default     = "target_tracking"
+  
+  validation {
+    condition     = contains(["target_tracking", "step_scaling"], var.scaling_policy_type)
+    error_message = "Must be target_tracking or step_scaling"
+  }
+}
+
+variable "alb_arn_suffix" {
+  description = "ALB ARN suffix for CloudWatch metrics"
+  type        = string
+}

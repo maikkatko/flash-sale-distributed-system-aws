@@ -38,3 +38,7 @@ override.tf.json
 .terraformrc
 terraform.rc
 terraform/variables.tf
+
+*.csv
+*.html
+*.json

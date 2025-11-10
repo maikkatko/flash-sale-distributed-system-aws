@@ -99,6 +99,8 @@ module "ecs_products" {
   task_role_arn      = data.aws_iam_role.lab_role.arn
   log_group_name     = module.logging.log_group_name
   region             = var.aws_region
+
+  alb_arn_suffix     = module.alb.alb_arn_suffix
   
   # NEW: ALB integration
   target_group_arn   = module.alb.target_group_arn
