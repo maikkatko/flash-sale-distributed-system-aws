@@ -84,4 +84,4 @@ $ curl -v http://flash-sale-alb-754224422.us-west-2.elb.amazonaws.com/products/1
   - Redis forwarding invalid requests to DB - vulnerability
   - Message queue failure
     - message retries? (blocking, duplication)
-    -
+    - Dead Letter Queue?
