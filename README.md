@@ -77,3 +77,11 @@ $ curl -v http://flash-sale-alb-754224422.us-west-2.elb.amazonaws.com/products/1
   > <
 - Connection #0 to host flash-sale-alb-754224422.us-west-2.elb.amazonaws.com left intact
   {"id":1,"name":"Super Widget","description":"A very high-quality widget.","price":99.99,"stock":100,"created_at":"2025-11-08T22:50:16Z","updated_at":"2025-11-08T22:50:16Z"}
+
+  Topics to explore:
+
+  - Max connections on DB
+  - Redis forwarding invalid requests to DB - vulnerability
+  - Message queue failure
+    - message retries? (blocking, duplication)
+    -
