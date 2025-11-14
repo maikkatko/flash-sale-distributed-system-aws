@@ -3,6 +3,7 @@ import random
 import time
 from datetime import datetime
 from locust import HttpUser, task, between, events
+from scripts.metrics_collector import metrics_collector
 
 user_class = os.getenv('USER_CLASS', 'NormalUser')
  
@@ -258,3 +259,35 @@ class ChaosTestUser(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
+
+@events.test_start.add_listener
+def on_test_start(environment, **kwargs):
+    global metrics_collector
+    from scripts.metrics_collector import METRICS_CONFIG, AWSMetricsCollector
+    metrics_collector = AWSMetricsCollector(METRICS_CONFIG)
+    metrics_collector.start_collection()
+
+@events.test_stop.add_listener
+def on_test_stop(environment, **kwargs):
+    """Save results and export CloudWatch metrics when test completes"""
+    # Stop metrics collection
+    print(f"\n{'='*60}")
+    print("Stopping CloudWatch metrics collection...")
+    print(f"{'='*60}\n")
+    metrics_collector.stop_collection()
+    
+    # Wait for CloudWatch to finalize data
+    print(f"\n{'='*60}")
+    print("[METRICS] Waiting 2 minutes for CloudWatch to finalize data...")
+    print(f"{'='*60}\n")
+    time.sleep(120)
+    
+    # Export CloudWatch metrics
+    print(f"\n{'='*60}")
+    print("Exporting CloudWatch metrics...")
+    print(f"{'='*60}\n")
+    metrics_collector.export_all_metrics(output_format='json')
+    
+    print(f"\n{'='*60}")
+    print("Test complete! All data saved.")
+    print(f"{'='*60}\n")
