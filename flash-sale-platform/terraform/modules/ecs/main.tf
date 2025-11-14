@@ -72,7 +72,6 @@
     }
   }
 
-  # Auto Scaling Target - NEW!
   resource "aws_appautoscaling_target" "ecs_target" {
     max_capacity       = var.max_capacity
     min_capacity       = var.min_capacity
@@ -81,7 +80,6 @@
     service_namespace  = "ecs"
   }
 
-  # Auto Scaling Policy - NEW!
   resource "aws_appautoscaling_policy" "cpu_scaling" {
     count              = var.scaling_policy_type == "target_tracking" ? 1 : 0
     name               = "${var.service_name}-cpu-scaling"
@@ -103,7 +101,7 @@
 
 resource "aws_appautoscaling_policy" "ecs_requests" {
   count              = var.scaling_policy_type == "step_scaling" ? 1 : 0
-  name               = "${var.service_name}-request-step-scaling"
+  name               = "${var.service_name}-request-step-scaling-up"
   policy_type        = "StepScaling"
   resource_id        = aws_appautoscaling_target.ecs_target.resource_id
   scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
@@ -116,6 +114,7 @@ resource "aws_appautoscaling_policy" "ecs_requests" {
 
     step_adjustment {
       scaling_adjustment          = 2
+      
       metric_interval_lower_bound = 0
       metric_interval_upper_bound = 100
     }
@@ -131,21 +130,61 @@ resource "aws_appautoscaling_policy" "ecs_requests" {
   }
 }
 
-  resource "aws_cloudwatch_metric_alarm" "requests_high" {
-    count               = var.scaling_policy_type == "step_scaling" ? 1 : 0
-    alarm_name          = "${var.service_name}-high-requests"
-    comparison_operator = "GreaterThanThreshold"
-    evaluation_periods  = 1
-    metric_name         = "RequestCountPerTarget"
-    namespace           = "AWS/ApplicationELB"
-    period              = 60
-    statistic           = "Sum"
-    threshold           = 100
-    
-    dimensions = {
-      TargetGroup  = var.target_group_arn
-      LoadBalancer = var.alb_arn_suffix
-    }
+resource "aws_cloudwatch_metric_alarm" "step_scale_up" {
+  count               = var.scaling_policy_type == "step_scaling" ? 1 : 0
+  alarm_name          = "${var.service_name}-requests-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "RequestCountPerTarget"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 1000
+  
+  dimensions = {
+    TargetGroup  = split(":", var.target_group_arn)[5]
+    LoadBalancer = var.alb_arn_suffix
+  }
+  
+  alarm_actions = [aws_appautoscaling_policy.ecs_requests[0].arn]
+}
 
-    alarm_actions = [aws_appautoscaling_policy.ecs_requests[0].arn]
-  } 
+resource "aws_appautoscaling_policy" "ecs_requests_down" {
+  count              = var.scaling_policy_type == "step_scaling" ? 1 : 0
+  name               = "${var.service_name}-request-step-scaling-down"
+  policy_type        = "StepScaling"
+  resource_id        = aws_appautoscaling_target.ecs_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs_target.service_namespace
+
+  step_scaling_policy_configuration {
+    adjustment_type         = "ChangeInCapacity"
+    cooldown                = 300
+    metric_aggregation_type = "Average"
+
+    step_adjustment {
+      scaling_adjustment          = -1
+      metric_interval_upper_bound = 0
+    }
+  }
+}
+
+# Scale DOWN alarm
+resource "aws_cloudwatch_metric_alarm" "step_scale_down" {
+  count               = var.scaling_policy_type == "step_scaling" ? 1 : 0
+  alarm_name          = "${var.service_name}-requests-low"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2 
+  metric_name         = "RequestCountPerTarget"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 500
+  
+  dimensions = {
+    TargetGroup  = split(":", var.target_group_arn)[5]
+    LoadBalancer = var.alb_arn_suffix
+  }
+  
+  alarm_actions = [aws_appautoscaling_policy.ecs_requests_down[0].arn]
+}

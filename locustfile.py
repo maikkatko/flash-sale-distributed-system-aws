@@ -33,15 +33,6 @@ class NormalUser(HttpUser):
             if response.status_code >= 400:
                 print(f"GET failed: {response.status_code} - {response.text}")
                 response.failure(f"Got {response.status_code}")
-            
-            test_results.append({
-                "operation": "browse_product",
-                "user_class": "NormalUser",
-                "response_time": round(response_time, 2),
-                "success": response.status_code == 200,
-                "status_code": response.status_code,
-                "timestamp": start_time.isoformat() + "Z"
-            })
 
     @task(5)
     def update_product(self):
@@ -67,15 +58,6 @@ class NormalUser(HttpUser):
             if response.status_code >= 400:
                 print(f"PUT failed: {response.status_code} - {response.text}")
                 response.failure(f"Got {response.status_code}")
-            
-            test_results.append({
-                "operation": "update_product",
-                "user_class": "AggressiveBuyer",
-                "response_time": round(response_time, 2),
-                "success": response.status_code == 204,
-                "status_code": response.status_code,
-                "timestamp": start_time.isoformat() + "Z"
-            })
     
     @task(30)
     def browse_catalog(self):
@@ -91,15 +73,6 @@ class NormalUser(HttpUser):
             if response.status_code >= 400:
                 print(f"GET failed: {response.status_code} - {response.text}")
                 response.failure(f"Got {response.status_code}")
-            
-            test_results.append({
-                "operation": "browse_catalog",
-                "user_class": "NormalUser",
-                "response_time": round(response_time, 2),
-                "success": response.status_code == 200,
-                "status_code": response.status_code,
-                "timestamp": start_time.isoformat() + "Z"
-            })
     
     @task(20)
     def create_product(self):
@@ -122,15 +95,6 @@ class NormalUser(HttpUser):
             if response.status_code >= 400:
                 print(f"POST failed: {response.status_code} - {response.text}")
                 response.failure(f"Got {response.status_code}")
-            
-            test_results.append({
-                "operation": "create_product",
-                "user_class": "NormalUser",
-                "response_time": round(response_time, 2),
-                "success": response.status_code == 201,
-                "status_code": response.status_code,
-                "timestamp": start_time.isoformat() + "Z"
-            })
     
     @task(10)
     def health_check(self):
@@ -142,16 +106,6 @@ class NormalUser(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
-            
-            test_results.append({
-                "operation": "health_check",
-                "user_class": "NormalUser",
-                "response_time": round(response_time, 2),
-                "success": response.status_code == 200,
-                "status_code": response.status_code,
-                "timestamp": start_time.isoformat() + "Z"
-            })
-
 
 class AggressiveBuyer(HttpUser):
     """For: high_contention, thundering_herd, fairness_10x_demand"""
@@ -176,15 +130,6 @@ class AggressiveBuyer(HttpUser):
             if response.status_code >= 400:
                 print(f"GET failed: {response.status_code} - {response.text}")
                 response.failure(f"Got {response.status_code}")
-            
-            test_results.append({
-                "operation": "browse_product",
-                "user_class": "AggressiveBuyer",
-                "response_time": round(response_time, 2),
-                "success": response.status_code == 200,
-                "status_code": response.status_code,
-                "timestamp": start_time.isoformat() + "Z"
-            })
     
     @task(50)
     def update_product(self):
@@ -210,15 +155,6 @@ class AggressiveBuyer(HttpUser):
             if response.status_code >= 400:
                 print(f"PUT failed: {response.status_code} - {response.text}")
                 response.failure(f"Got {response.status_code}")
-            
-            test_results.append({
-                "operation": "update_product",
-                "user_class": "AggressiveBuyer",
-                "response_time": round(response_time, 2),
-                "success": response.status_code == 204,
-                "status_code": response.status_code,
-                "timestamp": start_time.isoformat() + "Z"
-            })
     
     @task(15)
     def create_product(self):
@@ -242,15 +178,6 @@ class AggressiveBuyer(HttpUser):
                 print(f"POST failed: {response.status_code} - {response.text}")
                 response.failure(f"Got {response.status_code}")
             
-            test_results.append({
-                "operation": "create_product",
-                "user_class": "AggressiveBuyer",
-                "response_time": round(response_time, 2),
-                "success": response.status_code == 201,
-                "status_code": response.status_code,
-                "timestamp": start_time.isoformat() + "Z"
-            })
-    
     @task(5)
     def browse_catalog(self):
         start_time = datetime.now()
@@ -265,15 +192,6 @@ class AggressiveBuyer(HttpUser):
             if response.status_code >= 400:
                 print(f"GET failed: {response.status_code} - {response.text}")
                 response.failure(f"Got {response.status_code}")
-            
-            test_results.append({
-                "operation": "browse_catalog",
-                "user_class": "AggressiveBuyer",
-                "response_time": round(response_time, 2),
-                "success": response.status_code == 200,
-                "status_code": response.status_code,
-                "timestamp": start_time.isoformat() + "Z"
-            })
 
 
 class ChaosTestUser(HttpUser):
@@ -298,15 +216,6 @@ class ChaosTestUser(HttpUser):
             if response.status_code >= 400:
                 print(f"GET failed: {response.status_code} - {response.text}")
                 response.failure(f"Got {response.status_code}")
-            
-            test_results.append({
-                "operation": "browse_product",
-                "user_class": "ChaosTestUser",
-                "response_time": round(response_time, 2),
-                "success": response.status_code == 200,
-                "status_code": response.status_code,
-                "timestamp": start_time.isoformat() + "Z"
-            })
     
     @task(25)
     def update_product(self):
@@ -331,15 +240,6 @@ class ChaosTestUser(HttpUser):
             if response.status_code >= 400:
                 print(f"PUT failed: {response.status_code} - {response.text}")
                 response.failure(f"Got {response.status_code}")
-            
-            test_results.append({
-                "operation": "update_product",
-                "user_class": "ChaosTestUser",
-                "response_time": round(response_time, 2),
-                "success": response.status_code == 204,
-                "status_code": response.status_code,
-                "timestamp": start_time.isoformat() + "Z"
-            })
     
     @task(20)
     def browse_catalog(self):
@@ -355,15 +255,6 @@ class ChaosTestUser(HttpUser):
             if response.status_code >= 400:
                 print(f"GET failed: {response.status_code} - {response.text}")
                 response.failure(f"Got {response.status_code}")
-            
-            test_results.append({
-                "operation": "browse_catalog",
-                "user_class": "ChaosTestUser",
-                "response_time": round(response_time, 2),
-                "success": response.status_code == 200,
-                "status_code": response.status_code,
-                "timestamp": start_time.isoformat() + "Z"
-            })
     
     @task(15)
     def health_check(self):
@@ -375,15 +266,6 @@ class ChaosTestUser(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
-            
-            test_results.append({
-                "operation": "health_check",
-                "user_class": "ChaosTestUser",
-                "response_time": round(response_time, 2),
-                "success": response.status_code == 200,
-                "status_code": response.status_code,
-                "timestamp": start_time.isoformat() + "Z"
-            })
 
 
 @events.test_start.add_listener 
@@ -393,6 +275,19 @@ def on_test_start(environment, **kwargs):
     print("Starting CloudWatch metrics collection...")
     print(f"{'='*60}\n")
     metrics_collector.start_collection()
+
+@events.request.add_listener
+def on_request(request_type, name, response_time, response_length, exception, **kwargs):
+    response = kwargs.get('response')
+    status_code = response.status_code if response else None
+    
+    test_results.append({
+        "operation": name,
+        "response_time": round(response_time, 2),
+        "success": exception is None,
+        "status_code": status_code,
+        "timestamp": datetime.now().isoformat() + "Z"
+    })
 
 
 @events.test_stop.add_listener
