@@ -57,7 +57,7 @@ def run_scenario(scenario_name: str):
         print("\nStopping test...")
     finally:
         subprocess.run(['docker-compose', 'down'], check=False, env=env)
-        print(f"\nTest complete! Results saved to results/locust_data/{scenario_name}_test_results.json")
+        print(f"\nTest complete! Results saved to results/raw_locust_data/{scenario_name}_test_results.json")
 
 
 if __name__ == "__main__":

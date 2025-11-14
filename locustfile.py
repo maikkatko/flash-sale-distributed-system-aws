@@ -1,16 +1,11 @@
 import os
-import json
 import random
 import time
 from datetime import datetime
 from locust import HttpUser, task, between, events
-from scripts.metrics_collector import metrics_collector
 
 user_class = os.getenv('USER_CLASS', 'NormalUser')
  
-test_results = []
-
-
 class NormalUser(HttpUser):
     """For: baseline, sustained_load"""
     weight = 1 if user_class == 'NormalUser' else 0
@@ -106,7 +101,6 @@ class NormalUser(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
-
 class AggressiveBuyer(HttpUser):
     """For: high_contention, thundering_herd, fairness_10x_demand"""
     weight = 1 if user_class == 'AggressiveBuyer' else 0
@@ -192,8 +186,6 @@ class AggressiveBuyer(HttpUser):
             if response.status_code >= 400:
                 print(f"GET failed: {response.status_code} - {response.text}")
                 response.failure(f"Got {response.status_code}")
-
-
 class ChaosTestUser(HttpUser):
     """For: chaos_baseline - needs consistent traffic to observe failures"""
     weight = 1 if user_class == 'ChaosTestUser' else 0
@@ -266,107 +258,3 @@ class ChaosTestUser(HttpUser):
         ) as response:
             end_time = datetime.now()
             response_time = (end_time - start_time).total_seconds() * 1000
-
-
-@events.test_start.add_listener 
-def on_test_start(environment, **kwargs):
-    """Start CloudWatch metrics collection when test begins"""
-    print(f"\n{'='*60}")
-    print("Starting CloudWatch metrics collection...")
-    print(f"{'='*60}\n")
-    metrics_collector.start_collection()
-
-@events.request.add_listener
-def on_request(request_type, name, response_time, response_length, exception, **kwargs):
-    response = kwargs.get('response')
-    status_code = response.status_code if response else None
-    
-    test_results.append({
-        "operation": name,
-        "response_time": round(response_time, 2),
-        "success": exception is None,
-        "status_code": status_code,
-        "timestamp": datetime.now().isoformat() + "Z"
-    })
-
-
-@events.test_stop.add_listener
-def on_test_stop(environment, **kwargs):
-    """Save results and export CloudWatch metrics when test completes"""
-    
-    # Stop metrics collection first
-    print(f"\n{'='*60}")
-    print("Stopping CloudWatch metrics collection...")
-    print(f"{'='*60}\n")
-    metrics_collector.stop_collection()
-    
-    # Save locust test results
-    print(f"\n{'='*60}")
-    print("Saving test results...")
-    print(f"Total operations: {len(test_results)}")
-    print(f"{'='*60}\n")
-
-    if test_results:
-        test_name = os.getenv('TEST_NAME', 'test')
-        filename = os.getenv('TEST_RESULTS_FILE_NAME', f'{test_name}_results.json')
-        filepath = os.path.join("/mnt/locust/results/formatted_locust_data", filename)
-
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-
-        operations = {}
-        for result in test_results:
-            op = result['operation']
-            if op not in operations:
-                operations[op] = {
-                    'count': 0,
-                    'success': 0,
-                    'failed': 0,
-                    'total_response_time': 0
-                }
-            operations[op]['count'] += 1
-            if result['success']:
-                operations[op]['success'] += 1
-            else:
-                operations[op]['failed'] += 1
-            operations[op]['total_response_time'] += result['response_time']
-
-        summary = {
-            'test_name': test_name,
-            'total_requests': len(test_results),
-            'operations': {
-                op: {
-                    'count': stats['count'],
-                    'success_rate': round(stats['success'] / stats['count'] * 100, 2),
-                    'avg_response_time': round(stats['total_response_time'] / stats['count'], 2)
-                }
-                for op, stats in operations.items()
-            }
-        }
-
-        output = {
-            'summary': summary,
-            'results': test_results
-        }
-
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(output, f, indent=2)
-
-        print(f"Successfully saved results to {filepath}")
-    else:
-        print("WARNING: test_results is empty!")
-    
-    # Wait for CloudWatch to finalize data
-    print(f"\n{'='*60}")
-    print("[METRICS] Waiting 2 minutes for CloudWatch to finalize data...")
-    print(f"{'='*60}\n")
-    time.sleep(120)
-    
-    # Export CloudWatch metrics
-    print(f"\n{'='*60}")
-    print("Exporting CloudWatch metrics...")
-    print(f"{'='*60}\n")
-    metrics_collector.export_all_metrics(output_format='json')
-    
-    print(f"\n{'='*60}")
-    print("Test complete! All data saved.")
-    print(f"{'='*60}\n")
