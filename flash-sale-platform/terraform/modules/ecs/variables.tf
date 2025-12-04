@@ -83,6 +83,22 @@ variable "scaling_policy_type" {
   }
 }
 
+variable "step_scaling_config" {
+  description = "Step scaling configuration"
+  type = object({
+    metric_aggregation_type = string
+    adjustment_type         = string
+    cooldown                = number
+    steps = list(object({
+      scaling_adjustment          = number
+      metric_interval_lower_bound = number
+      metric_interval_upper_bound = number
+    }))
+  })
+  default = null
+}
+
+
 variable "alb_arn_suffix" {
   description = "ALB ARN suffix for CloudWatch metrics"
   type        = string

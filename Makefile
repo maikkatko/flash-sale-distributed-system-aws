@@ -19,8 +19,19 @@ setup-aws:
 	@python scripts/init_aws_env_vars.py
 	@echo AWS infrastructure setup complete
 
-update-scaling-policy:
-	@terraform -chdir=flash-sale-platform/terraform apply -auto-approve -var=scaling_policy_type=step_scaling
+setup-aws-step-scaling:
+	@echo "Setting up AWS infrastructure with step scaling..."
+	@python scripts/update_scaling_policy.py step_scaling
+
+setup-aws-target-tracking:
+	@echo "Setting up AWS infrastructure with target tracking..."
+	@python scripts/update_scaling_policy.py target_tracking
+
+reset-tasks:
+	@python scripts/reset_ecs_tasks.py 1
+
+reset-tasks-custom:
+	@python scripts/reset_ecs_tasks.py $(count)
 
 init-tf:
 	@terraform -chdir=flash-sale-platform/terraform init
@@ -34,11 +45,11 @@ seed-data:
 test-baseline: seed-data
 	@python scripts/run_scenario.py baseline
 
-test-baseline-target: seed-data
-	@python scripts/run_scenario.py baseline_target_tracking
+test-baseline-target: seed-data setup-aws-target-tracking
+	@python scripts/run_scenario.py baseline
 
-test-baseline-step: seed-data
-	@python scripts/run_scenario.py baseline_step_scaling
+test-baseline-step: seed-data setup-aws-step-scaling
+	@python scripts/run_scenario.py baseline
 
 test-high-contention:
 	@echo === High Contention Test (Exp 1) ===
@@ -48,11 +59,11 @@ test-thundering-herd:
 	@echo === Thundering Herd Test (Exp 2) ===
 	@python scripts/run_scenario.py thundering_herd
 
-test-thundering-herd-target:
-	@python scripts/run_scenario.py thundering_herd_target_tracking
+test-thundering-herd-target: setup-aws-target-tracking
+	@python scripts/run_scenario.py thundering_herd
 
-test-thundering-herd-step:
-	@python scripts/run_scenario.py thundering_herd_step_scaling
+test-thundering-herd-step: setup-aws-step-scaling
+	@python scripts/run_scenario.py thundering_herd
 
 test-sustained:
 	@echo === Sustained Load Test (Exp 2) ===
@@ -104,7 +115,7 @@ run-all:
 
 analyze:
 	@echo === Analyzing Results ===
-	@python scripts/analyze_results.py || python3 scripts/analyze_results.py
+	@python scripts/analyze_baseline_thundering_herd.py || python3 scripts/analyze_baseline_thundering_herd.py
 
 update-server:
 	@echo === Updating Server Service ===

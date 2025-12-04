@@ -23,17 +23,20 @@ variable "ecs_security_group_id" {
 variable "db_name" {
   description = "The name of the database to create."
   type        = string
+  default = "flashsale"
 }
 
 variable "db_username" {
   description = "The master username for the database."
   type        = string
   sensitive   = true
+  default = "admin"
 }
 
 variable "db_password" {
   description = "The master password for the database."
   type        = string
   sensitive   = true
+  default = "SecurePassword123!"
 }
 

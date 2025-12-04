@@ -8,10 +8,10 @@ script_dir = Path(__file__).parent
 results_dir = script_dir.parent / "results" / "formatted_locust_data"
 
 # Load JSON files
-with open(results_dir / 'baseline_target_scaling_test_results.json', 'r') as f:
+with open(results_dir / 'baseline_step_scaling_test_results.json', 'r') as f:
     baseline = json.load(f)
     
-with open(results_dir / 'thundering_herd_target_scaling_test_results.json', 'r') as f:
+with open(results_dir / 'thundering_herd_step_scaling_test_results.json', 'r') as f:
     thundering_herd = json.load(f)
 
 # Test configuration data
