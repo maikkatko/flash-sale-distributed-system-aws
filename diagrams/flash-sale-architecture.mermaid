@@ -1,0 +1,64 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#2B579A', 'primaryTextColor': '#000', 'primaryBorderColor': '#1a3a6e', 'lineColor': '#666', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e8f4f8', 'nodeTextColor': '#000'}}}%%
+
+flowchart TB
+    subgraph Users["Load Testing"]
+        L[("Locust<br/>500 Users")]
+    end
+
+    subgraph Edge["Edge Layer"]
+        ALB["Application Load Balancer<br/>────────────────<br/>• Health checks<br/>• Request routing<br/>• TLS termination"]
+    end
+
+    subgraph Compute["Compute Layer (ECS Fargate)"]
+        API["Flash Sale API<br/>────────────────<br/>• GET /products<br/>• POST /checkout<br/>• Idempotency check<br/>────────────────<br/>Go + Gin<br/>Min: 2 | Max: 10 tasks"]
+        
+        OP["Order Processor<br/>────────────────<br/>• Poll SQS<br/>• Payment simulation<br/>• RDS persistence<br/>────────────────<br/>Go<br/>Min: 1 | Max: 5 tasks"]
+    end
+
+    subgraph Cache["Cache Layer (ElastiCache)"]
+        REDIS[("Redis<br/>────────────────<br/>inv:{id} → Stock count<br/>res:{id} → Reservation<br/>lock:{id} → Dist. lock<br/>idem:{key} → Dedup<br/>────────────────<br/>Lua atomic scripts")]
+    end
+
+    subgraph Queue["Message Queue (SQS)"]
+        SQS[["Order Queue<br/>────────────────<br/>Standard queue<br/>Visibility: 5 min"]]
+        DLQ[["Dead Letter Queue<br/>────────────────<br/>Failed orders<br/>Max receives: 3"]]
+    end
+
+    subgraph DB["Database Layer"]
+        RDS[("RDS PostgreSQL<br/>────────────────<br/>products table<br/>orders table<br/>────────────────<br/>Multi-AZ enabled")]
+    end
+
+    subgraph Monitor["Observability"]
+        CW["CloudWatch<br/>Container Insights"]
+    end
+
+    %% Main flow
+    L -->|"HTTP/S"| ALB
+    ALB -->|"Route"| API
+    
+    %% Synchronous path (< 50ms)
+    API <-->|"1. Check inventory<br/>2. Atomic DECR<br/>3. Create reservation"| REDIS
+    
+    %% Async handoff
+    API -->|"4. Publish order"| SQS
+    
+    %% Background processing
+    SQS -->|"Poll"| OP
+    OP -->|"Persist order"| RDSff
+    
+    REDIS -.->|"Metrics"| CW
+    
+    %% Styling
+    classDef userStyle fill:#4a90d9,stroke:#2B579A,color:#000
+    classDef computeStyle fill:#e8f4e8,stroke:#2e7d32,color:#000
+    classDef cacheStyle fill:#fff3e0,stroke:#ef6c00,color:#000
+    classDef queueStyle fill:#fce4ec,stroke:#c2185b,color:#000
+    classDef dbStyle fill:#e8eaf6,stroke:#3949ab,color:#000
+    
+    class L userStyle
+    class ALB edgeStyle
+    class API,OP computeStyle
+    class REDIS cacheStyle
+    class SQS,DLQ queueStyle
+    class RDS dbStyle
+    class CW monitorStyle
