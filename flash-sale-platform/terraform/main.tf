@@ -114,6 +114,16 @@ module "rds" {
   db_password           = var.db_password
 }
 
+# --- ElastiCache (Redis) ---
+module "elasticache" {
+  source                = "./modules/elasticache"
+  service_name          = var.service_name
+  vpc_id                = module.network.vpc_id
+  private_subnet_ids    = module.network.private_subnet_ids
+  ecs_security_group_id = aws_security_group.ecs_tasks.id
+  tags                  = { Project = var.service_name }
+}
+
 # UPDATED: ECS with Auto-Scaling and ALB Integration
 module "ecs_products" {
   source             = "./modules/ecs"
@@ -180,7 +190,7 @@ module "ecs_orders" {
     PORT          = var.container_port_orders
     SQS_QUEUE_URL = module.sqs.order_queue_url
     AWS_REGION    = var.aws_region
-    REDIS_ADDR    = "dummy:6379" # Placeholder, will be replaced by ElastiCache module
+    REDIS_ADDR    = module.elasticache.primary_endpoint_address
   }
   depends_on = [module.sqs]
 }
