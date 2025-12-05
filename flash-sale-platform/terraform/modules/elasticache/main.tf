@@ -38,12 +38,13 @@ resource "aws_elasticache_replication_group" "main" {
   port                          = 6379
   automatic_failover_enabled    = false # No failover for a single node cluster
   multi_az_enabled              = false # Not needed for a single node
-  number_cache_clusters         = 1
+  num_cache_clusters         = 1
   subnet_group_name             = aws_elasticache_subnet_group.main.name
   security_group_ids            = [aws_security_group.redis.id]
   
   # Enable encryption in transit for better security
-  transit_encryption_enabled = true
+  transit_encryption_enabled = false
+  apply_immediately          = true
 
   tags = var.tags
 
