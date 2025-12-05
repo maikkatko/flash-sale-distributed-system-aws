@@ -69,7 +69,7 @@ module "alb" {
   source                 = "./modules/alb"
   service_name           = var.service_name
   vpc_id                 = module.network.vpc_id
-  subnet_ids             = module.network.public_subnet_ids # ALB must be in public subnets
+  subnet_ids             = module.network.public_subnet_ids
   alb_security_group_id  = aws_security_group.alb.id
   container_port         = var.container_port
 }
@@ -80,7 +80,7 @@ module "rds" {
   source                = "./modules/rds"
   service_name          = var.service_name
   vpc_id                = module.network.vpc_id
-  private_subnet_ids    = module.network.private_subnet_ids # Use dedicated private subnets for the database
+  private_subnet_ids    = module.network.private_subnet_ids
   ecs_security_group_id = aws_security_group.ecs_tasks.id
   db_name               = var.db_name
   db_username           = var.db_username
@@ -93,24 +93,23 @@ module "ecs_products" {
   service_name       = var.service_name
   image              = docker_registry_image.app.name
   container_port     = var.container_port_products
-  subnet_ids         = module.network.private_subnet_ids # ECS tasks should be in private subnets
+  subnet_ids         = module.network.private_subnet_ids
   security_group_ids = [aws_security_group.ecs_tasks.id]
   execution_role_arn = data.aws_iam_role.lab_role.arn
   task_role_arn      = data.aws_iam_role.lab_role.arn
   log_group_name     = module.logging.log_group_name
   region             = var.aws_region
-
   alb_arn_suffix     = module.alb.alb_arn_suffix
-  
-  # NEW: ALB integration
   target_group_arn   = module.alb.target_group_arn
-  
-  # NEW: Auto-scaling parameters
-  min_capacity       = var.min_capacity
-  max_capacity       = var.max_capacity
-  cpu_target_value   = var.cpu_target_value
-  scale_out_cooldown = var.scale_out_cooldown
-  scale_in_cooldown  = var.scale_in_cooldown
+
+  # Scaling config
+  min_capacity        = var.min_capacity
+  max_capacity        = var.max_capacity
+  scaling_policy_type = var.scaling_policy_type
+  step_scaling_config = var.step_scaling_config
+  cpu_target_value    = var.cpu_target_value
+  scale_out_cooldown  = var.scale_out_cooldown
+  scale_in_cooldown   = var.scale_in_cooldown
 
   # Pass database connection details as environment variables
   environment_variables = {
@@ -128,7 +127,6 @@ resource "docker_image" "products_app" {
   build {
     context    = "../src/products"
     platform   = "linux/amd64"
-    # Use build args to disable Go's build cache, ensuring a fresh binary.
     build_arg = {
       GOCACHE = "/dev/null"
     }

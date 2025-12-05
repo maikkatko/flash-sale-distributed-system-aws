@@ -10,46 +10,6 @@ from dotenv import load_dotenv
 project_root = Path(__file__).parent.parent
 load_dotenv(dotenv_path=project_root / '.env')
 
-def _wait_for_ecs_stability(service_name, cluster_name, timeout=300):
-    """Wait for ECS service to reach steady state after scaling policy change"""
-    ecs = boto3.client('ecs')
-    print(f"Waiting for ECS service {service_name} to stabilize...")
-    
-    waiter = ecs.get_waiter('services_stable')
-    
-    try:
-        waiter.wait(
-            cluster=cluster_name,
-            services=[service_name],
-            WaiterConfig={
-                'Delay': 15,
-                'MaxAttempts': timeout // 15
-            }
-        )
-        print("ECS service is stable and ready")
-    except Exception as e:
-        print(f"Warning: Service stabilization check failed: {e}")
-        print("Proceeding anyway after 30s buffer...")
-        time.sleep(30)
-
-def _configure_scaling_policy(env, policy_type):
-    """Configure autoscaling policy before test"""
-    print(f"Applying scaling policy: {policy_type}...")
-    
-    result = subprocess.run([
-        "terraform",
-        "-chdir=flash-sale-platform/terraform", 
-        "apply",
-        "-auto-approve",
-        f"-var=scaling_policy_type={policy_type}"
-    ], env=env, check=True, capture_output=True, text=True)
-    
-    print("Terraform apply complete")
-    
-    service_name = os.getenv('SERVICE_NAME', 'flash-sale-platform')
-    cluster_name = f"{service_name}-cluster"
-    _wait_for_ecs_stability(service_name, cluster_name)
-
 def run_scenario(scenario_name: str):
     with open('scenarios.yaml', 'r', encoding='utf-8') as f:
         scenarios = yaml.safe_load(f)
@@ -76,8 +36,6 @@ def run_scenario(scenario_name: str):
     env['TF_VAR_db_username'] = os.getenv('TF_VAR_db_username', 'admin')
     env['TF_VAR_db_password'] = os.getenv('TF_VAR_db_password', 'SecurePassword123!')
 
-    _configure_scaling_policy(env, str(config.get('scaling_policy', 'target_tracking')))
-
     print(f"\n{'='*60}")
     print(f"Running {scenario_name} scenario:")
     print(f"Description: {str(config.get('description', 'N/A'))})")
@@ -99,7 +57,7 @@ def run_scenario(scenario_name: str):
         print("\nStopping test...")
     finally:
         subprocess.run(['docker-compose', 'down'], check=False, env=env)
-        print(f"\nTest complete! Results saved to results/locust_data/{scenario_name}_test_results.json")
+        print(f"\nTest complete! Results saved to results/raw_locust_data/{scenario_name}_test_results.json")
 
 
 if __name__ == "__main__":

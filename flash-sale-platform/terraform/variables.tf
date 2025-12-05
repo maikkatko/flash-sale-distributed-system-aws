@@ -67,18 +67,21 @@ variable "scale_in_cooldown" {
 variable "db_name" {
   description = "The name of the database to create."
   type        = string
+  default     = "flashsale"  # Add this
 }
 
 variable "db_username" {
   description = "The master username for the database."
   type        = string
   sensitive   = true
+  default     = "admin"  # Add this
 }
 
 variable "db_password" {
   description = "The master password for the database."
   type        = string
   sensitive   = true
+  default     = "SecurePassword123!"  # Add this
 }
 
 variable "scaling_policy_type" {
@@ -89,5 +92,41 @@ variable "scaling_policy_type" {
   validation {
     condition     = contains(["target_tracking", "step_scaling"], var.scaling_policy_type)
     error_message = "Must be target_tracking or step_scaling"
+  }
+}
+
+variable "step_scaling_config" {
+  description = "Step scaling configuration"
+  type = object({
+    metric_aggregation_type = string
+    adjustment_type         = string
+    cooldown                = number
+    steps = list(object({
+      scaling_adjustment          = number
+      metric_interval_lower_bound = number
+      metric_interval_upper_bound = number
+    }))
+  })
+  default = {
+    metric_aggregation_type = "Average"
+    adjustment_type         = "ChangeInCapacity"
+    cooldown                = 60
+    steps = [
+      {
+        scaling_adjustment          = 2
+        metric_interval_lower_bound = 0
+        metric_interval_upper_bound = 500
+      },
+      {
+        scaling_adjustment          = 5
+        metric_interval_lower_bound = 500
+        metric_interval_upper_bound = 1000
+      },
+      {
+        scaling_adjustment          = 10
+        metric_interval_lower_bound = 1000
+        metric_interval_upper_bound = null
+      }
+    ]
   }
 }
