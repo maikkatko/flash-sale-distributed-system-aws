@@ -18,8 +18,18 @@ variable "alb_security_group_id" {
   type        = string
 }
 
-variable "container_port" {
-  description = "Port the container listens on"
+variable "products_container_port" {
+  description = "Port the products container listens on"
   type        = number
-  default     = 8080
+}
+
+variable "orders_container_port" {
+  description = "Port the orders container listens on"
+  type        = number
+}
+
+variable "health_check_path" {
+  description = "Health check path for the target groups"
+  type        = string
+  default     = "/"
 }

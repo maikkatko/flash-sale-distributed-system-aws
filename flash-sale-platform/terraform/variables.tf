@@ -20,10 +20,10 @@ variable "container_port_products" {
   default = 8081
 }
 
-variable "container_port" {
-  description = "The port the container listens on. Used by network and ALB modules."
+variable "container_port_orders" {
+  description = "The port the orders container will listen on."
   type        = number
-  default     = 8080
+  default     = 8082
 }
 
 # How long to keep logs
