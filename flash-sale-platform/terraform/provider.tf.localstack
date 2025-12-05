@@ -1,0 +1,80 @@
+# This file provides overrides for local development using LocalStack.
+# To use, ensure this file is present in the terraform directory when running `terraform apply`.
+# To deploy to a real AWS environment, remove or rename this file.
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "~> 3.0"
+    }
+  }
+}
+
+provider "aws" {
+  # Dummy credentials for LocalStack.
+  access_key = "test"
+  secret_key = "test"
+  region     = var.aws_region
+
+  # Skip credential validation, which is unnecessary for LocalStack.
+  skip_credentials_validation = true
+  skip_metadata_api_check     = true
+  skip_requesting_account_id  = true
+
+  # Point all service endpoints to the LocalStack edge service.
+  # The edge service runs on port 4566 by default.
+  endpoints {
+    apigateway       = "http://localhost:4566"
+    apigatewayv2     = "http://localhost:4566"
+    cloudwatch       = "http://localhost:4566"
+    cloudwatchlogs   = "http://localhost:4566"
+    dynamodb         = "http://localhost:4566"
+    ec2              = "http://localhost:4566"
+    ecr              = "http://localhost:4566"
+    ecs              = "http://localhost:4566"
+    elasticache      = "http://localhost:4566"
+    elbv2            = "http://localhost:4566"
+    iam              = "http://localhost:4566"
+    lambda           = "http://localhost:4566"
+    rds              = "http://localhost:4566"
+    s3               = "http://localhost:4566"
+    secretsmanager   = "http://localhost:4566"
+    sqs              = "http://localhost:4566"
+    ssm              = "http://localhost:4566"
+    sts              = "http://localhost:4566"
+    # Add other services here as you use them.
+  }
+}
+
+# The docker provider's authentication depends on a real AWS ECR token.
+# For LocalStack, we must override this to prevent it from trying to
+# contact AWS. We provide dummy credentials instead.
+provider "docker" {
+  registry_auth {
+    address = "localhost:4566"
+  } # Bypasses the data.aws_ecr_authorization_token data source
+}
+
+# Override for the "LabRole" data source when running against LocalStack.
+# This creates a dummy role in LocalStack so the data source in main.tf can resolve.
+# LocalStack does not strictly enforce the permissions within this policy,
+# but it needs the role to exist with a valid ARN.
+resource "aws_iam_role" "lab_role_localstack_override" {
+  name = "LabRole" # Must match the name used in the data source in main.tf
+
+  assume_role_policy = jsonencode({
+    Version   = "2012-10-17",
+    Statement = [
+      {
+        Action    = "sts:AssumeRole",
+        Effect    = "Allow",
+        Principal = { Service = "ec2.amazonaws.com" } # Or any service, LocalStack is flexible
+      }
+    ]
+  })
+}

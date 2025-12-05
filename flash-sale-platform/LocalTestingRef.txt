@@ -1,0 +1,18 @@
+To test Go services locally for troubleshooting and endpoint testing: 
+Utilize the docker-compose.yaml in the flash-sale-platform directory.
+
+Run 
+```
+docker-compose up --build 
+``
+to initiate the orders, products, rds, redis and community license localstack containers.
+
+After local testing:
+
+Run 
+```
+docker-compose down
+```
+
+
+To deploy to aws, enter the terraform directory and deploy as usual.

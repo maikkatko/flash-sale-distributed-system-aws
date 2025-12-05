@@ -1,0 +1,90 @@
+# docker-compose.yml
+services:
+  products:
+    build:
+      context: ./src/products
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_HOST=mysql
+      - DB_NAME=flashsale
+      - DB_PORT=3306
+      - DB_USER=admin
+      - PORT=8081
+      - DB_PASSWORD=password
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  orders:
+    build:
+      context: ./src/orders
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - DB_HOST=mysql
+      - DB_NAME=flashsale
+      - DB_USER=admin
+      - DB_PASSWORD=password
+      - DB_PORT=3306
+      - PORT=8082
+      - REDIS_ADDR=redis:6379
+      - SQS_QUEUE_URL=http://localstack:4566/000000000000/orders-queue
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      localstack:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: flashsale
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=sqs
+      - DEBUG=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Initialize SQS queue after localstack is ready
+  localstack-init:
+    image: amazon/aws-cli
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+    entrypoint: >
+      aws --endpoint-url=http://localstack:4566 sqs create-queue --queue-name orders-queue

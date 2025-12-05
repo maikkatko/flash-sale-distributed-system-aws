@@ -1,6 +1,6 @@
 output "primary_endpoint_address" {
   description = "The connection endpoint for the primary Redis node. Includes port."
-  value       = aws_elasticache_replication_group.main.primary_endpoint_address
+  value       = "${aws_elasticache_replication_group.main.primary_endpoint_address}:6379"
 }
 
 output "security_group_id" {
