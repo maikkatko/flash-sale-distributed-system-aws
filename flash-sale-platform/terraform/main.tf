@@ -10,6 +10,11 @@ module "ecr_products" {
   repository_name = "${var.service_name}-products"
 }
 
+module "ecr_orders" {
+  source          = "./modules/ecr"
+  repository_name = "${var.service_name}-orders"
+}
+
 module "logging" {
   source            = "./modules/logging"
   service_name      = var.service_name
@@ -56,6 +61,14 @@ resource "aws_security_group" "ecs_tasks" {
     security_groups = [aws_security_group.alb.id]
   }
 
+  # Allow inbound traffic from the ALB for orders service
+  ingress {
+    from_port       = var.container_port_orders
+    to_port         = var.container_port_orders
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
   # Allow all outbound traffic for pulling images and other needs
   egress {
     from_port   = 0
@@ -65,13 +78,27 @@ resource "aws_security_group" "ecs_tasks" {
   }
 }
 
+# --- SQS ---
+module "sqs" {
+  source      = "./modules/sqs"
+  name_prefix = "${var.service_name}-orders"
+  tags = {
+    Project = var.service_name
+  }
+}
+
 module "alb" {
   source                 = "./modules/alb"
   service_name           = var.service_name
   vpc_id                 = module.network.vpc_id
   subnet_ids             = module.network.public_subnet_ids
   alb_security_group_id  = aws_security_group.alb.id
-  container_port         = var.container_port
+  # Target group for products service
+  products_container_port = var.container_port_products
+  # Target group for orders service
+  orders_container_port = var.container_port_orders
+  # Health check path for orders service
+  health_check_path = "/health"
 }
 
 # --- Database ---
@@ -91,7 +118,7 @@ module "rds" {
 module "ecs_products" {
   source             = "./modules/ecs"
   service_name       = var.service_name
-  image              = docker_registry_image.app.name
+  image              = docker_registry_image.products_app_registry.name
   container_port     = var.container_port_products
   subnet_ids         = module.network.private_subnet_ids
   security_group_ids = [aws_security_group.ecs_tasks.id]
@@ -100,7 +127,7 @@ module "ecs_products" {
   log_group_name     = module.logging.log_group_name
   region             = var.aws_region
   alb_arn_suffix     = module.alb.alb_arn_suffix
-  target_group_arn   = module.alb.target_group_arn
+  target_group_arn   = module.alb.products_target_group_arn
 
   # Scaling config
   min_capacity        = var.min_capacity
@@ -121,19 +148,66 @@ module "ecs_products" {
   }
 }
 
+module "ecs_orders" {
+  source             = "./modules/ecs"
+  service_name       = "${var.service_name}-orders"
+  image              = docker_registry_image.orders_app_registry.name
+  container_port     = var.container_port_orders
+  subnet_ids         = module.network.private_subnet_ids
+  security_group_ids = [aws_security_group.ecs_tasks.id]
+  execution_role_arn = data.aws_iam_role.lab_role.arn
+  task_role_arn      = data.aws_iam_role.lab_role.arn
+  log_group_name     = module.logging.log_group_name
+  region             = var.aws_region
+  alb_arn_suffix     = module.alb.alb_arn_suffix
+  target_group_arn   = module.alb.orders_target_group_arn
+
+  # Scaling config
+  min_capacity        = var.min_capacity
+  max_capacity        = var.max_capacity
+  scaling_policy_type = var.scaling_policy_type
+  step_scaling_config = var.step_scaling_config
+  cpu_target_value    = var.cpu_target_value
+  scale_out_cooldown  = var.scale_out_cooldown
+  scale_in_cooldown   = var.scale_in_cooldown
+
+  # Pass database and SQS connection details as environment variables
+  environment_variables = {
+    DB_HOST       = module.rds.db_endpoint
+    DB_NAME       = module.rds.db_name
+    DB_USER       = var.db_username
+    DB_PASSWORD   = var.db_password
+    PORT          = var.container_port_orders
+    SQS_QUEUE_URL = module.sqs.order_queue_url
+    AWS_REGION    = var.aws_region
+    REDIS_ADDR    = "dummy:6379" # Placeholder, will be replaced by ElastiCache module
+  }
+  depends_on = [module.sqs]
+}
+
 # Build & push the Go app image into ECR
 resource "docker_image" "products_app" {
   name  = "${module.ecr_products.repository_url}:latest"
   build {
     context    = "../src/products"
     platform   = "linux/amd64"
-    build_arg = {
-      GOCACHE = "/dev/null"
-    }
   }
   depends_on = [module.ecr_products]
 }
 
-resource "docker_registry_image" "app" {
+resource "docker_registry_image" "products_app_registry" {
   name = docker_image.products_app.name
+}
+
+resource "docker_image" "orders_app" {
+  name  = "${module.ecr_orders.repository_url}:latest"
+  build {
+    context  = "../src/orders"
+    platform = "linux/amd64"
+  }
+  depends_on = [module.ecr_orders]
+}
+
+resource "docker_registry_image" "orders_app_registry" {
+  name = docker_image.orders_app.name
 }

@@ -300,7 +300,7 @@ func main() {
 	//Get port from environment variable or default to 8080
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8082"
 	}
 	log.Printf("Orders Service is running on port %s", port)
 	router.Run(":" + port)

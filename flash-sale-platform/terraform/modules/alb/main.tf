@@ -14,43 +14,91 @@ resource "aws_lb" "this" {
   }
 }
 
-# Target group for ECS tasks
-resource "aws_lb_target_group" "this" {
-  name        = "${var.service_name}-tg"
-  port        = var.container_port
+# Target group for the 'products' service
+resource "aws_lb_target_group" "products" {
+  name        = "${var.service_name}-products-tg"
+  port        = var.products_container_port
   protocol    = "HTTP"
-  target_type = "ip"  # Required for Fargate
   vpc_id      = var.vpc_id
+  target_type = "ip"
 
-  # Health check configuration
   health_check {
-    enabled             = true
-    healthy_threshold   = 2
-    interval            = 30
-    matcher             = "200"
-    path                = "/health"
-    port                = "traffic-port"
+    path                = var.health_check_path
     protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 30
     timeout             = 5
-    unhealthy_threshold = 3
-  }
-
-  # Deregistration delay
-  deregistration_delay = 30
-
-  tags = {
-    Name = "${var.service_name}-target-group"
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
   }
 }
 
-# Listener on port 80
+# Target group for the 'orders' service
+resource "aws_lb_target_group" "orders" {
+  name        = "${var.service_name}-orders-tg"
+  port        = var.orders_container_port
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+
+  health_check {
+    path                = var.health_check_path
+    protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
+
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.this.arn
-  port              = "80"
+  port              = 80
   protocol          = "HTTP"
 
+  # Default action: return a 404 for any requests that don't match a rule.
   default_action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Not Found"
+      status_code  = "404"
+    }
+  }
+}
+
+# Route /products* traffic to the products service
+resource "aws_lb_listener_rule" "products_rule" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 100
+
+  action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.this.arn
+    target_group_arn = aws_lb_target_group.products.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/products*"]
+    }
+  }
+}
+
+
+# Route /purchase traffic to the orders service
+resource "aws_lb_listener_rule" "orders_rule" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 99
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.orders.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/purchase*"]
+    }
   }
 }
