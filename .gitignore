@@ -44,3 +44,7 @@ terraform/variables.tf
 *.csv
 *.html
 *.json
+
+.vscode
+
+__pycache__
