@@ -16,9 +16,6 @@ terraform/
 │   ├── elasticache/   # Redis cluster, subnet group
 │   ├── sqs/           # Order queue, DLQ, fairness queue
 │   └── monitoring/    # CloudWatch dashboards, alarms
-├── environments/
-│   ├── dev/
-│   └── prod/
 └── variables.tf
 ```
 
