@@ -1,5 +1,3 @@
-//go:build products
-
 package main
 
 import (
