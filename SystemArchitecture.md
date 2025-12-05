@@ -1,6 +1,6 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              LOAD TESTING LAYER                              │
+│                              LOAD TESTING LAYER                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────┐  │
 │  │     Locust      │  │   Bot Simulator │  │    Metrics Collector        │  │
@@ -10,17 +10,17 @@
             │                    │
             ▼                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                               EDGE LAYER                                     │
+│                               EDGE LAYER                                    │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │                    Application Load Balancer                          │   │
+│  │                    Application Load Balancer                         │   │
 │  │  • Health checks (/health)     • Sticky sessions (optional)          │   │
-│  │  • TLS termination             • Connection draining                  │   │
+│  │  • TLS termination             • Connection draining                 │   │
 │  │  • Request routing             • WAF integration (rate limiting)     │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
-│                                                                              │
+│                                                                             │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │                    API Gateway (Optional - Exp 4)                     │   │
+│  │                    API Gateway (Optional - Exp 4)                    │   │
 │  │  • Token bucket rate limiting   • Request throttling                 │   │
 │  │  • Bot detection headers        • Queue-based admission control      │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
@@ -28,46 +28,46 @@
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          COMPUTE LAYER (ECS Fargate)                         │
+│                          COMPUTE LAYER (ECS Fargate)                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
+│                                                                             │
 │  ┌────────────────────────────────────────────────────────────────────┐     │
-│  │                        Flash Sale API Service                       │     │
+│  │                        Flash Sale API Service                      │     │
 │  │  ┌─────────────────────────────────────────────────────────────┐   │     │
-│  │  │  Endpoints:                                                  │   │     │
-│  │  │  • GET  /products          - List available products         │   │     │
-│  │  │  • GET  /products/{id}     - Product details + stock         │   │     │
-│  │  │  • POST /purchase          - Attempt purchase                │   │     │
-│  │  │  • GET  /orders/{id}       - Order status                    │   │     │
-│  │  │  • GET  /health            - Health check                    │   │     │
-│  │  │  • GET  /metrics           - Prometheus metrics              │   │     │
+│  │  │  Endpoints:                                                 │   │     │
+│  │  │  • GET  /products          - List available products        │   │     │
+│  │  │  • GET  /products/{id}     - Product details + stock        │   │     │
+│  │  │  • POST /purchase          - Attempt purchase               │   │     │
+│  │  │  • GET  /orders/{id}       - Order status                   │   │     │
+│  │  │  • GET  /health            - Health check                   │   │     │
+│  │  │  • GET  /metrics           - Prometheus metrics             │   │     │
 │  │  └─────────────────────────────────────────────────────────────┘   │     │
 │  │  ┌─────────────────────────────────────────────────────────────┐   │     │
-│  │  │  Inventory Strategies (Feature Flagged):                     │   │     │
-│  │  │  • Strategy A: No Locking (baseline)                         │   │     │
-│  │  │  • Strategy B: Pessimistic (Redis SETNX distributed lock)    │   │     │
-│  │  │  • Strategy C: Optimistic (Redis WATCH/MULTI or Lua scripts) │   │     │
-│  │  │  • Strategy D: Queue-based (SQS serialization)               │   │     │
+│  │  │  Inventory Strategies (Feature Flagged):                    │   │     │
+│  │  │  • Strategy A: No Locking (baseline)                        │   │     │
+│  │  │  • Strategy B: Pessimistic (Redis SETNX distributed lock)   │   │     │
+│  │  │  • Strategy C: Optimistic (Redis WATCH/MULTI or Lua scripts)│   │     │
+│  │  │  • Strategy D: Queue-based (SQS serialization)              │   │     │
 │  │  └─────────────────────────────────────────────────────────────┘   │     │
 │  │  ┌─────────────────────────────────────────────────────────────┐   │     │
-│  │  │  Resilience Patterns:                                        │   │     │
-│  │  │  • Circuit breaker (Redis, DB connections)                   │   │     │
-│  │  │  • Retry with exponential backoff                            │   │     │
-│  │  │  • Request timeout (context deadline)                        │   │     │
-│  │  │  • Bulkhead (connection pool limits)                         │   │     │
+│  │  │  Resilience Patterns:                                       │   │     │
+│  │  │  • Circuit breaker (Redis, DB connections)                  │   │     │
+│  │  │  • Retry with exponential backoff                           │   │     │
+│  │  │  • Request timeout (context deadline)                       │   │     │
+│  │  │  • Bulkhead (connection pool limits)                        │   │     │
 │  │  └─────────────────────────────────────────────────────────────┘   │     │
-│  │                                                                     │     │
+│  │                                                                    │     │
 │  │  Tech: Go + Gin | Min: 2 | Max: 10 tasks | CPU: 512 | Mem: 1024    │     │
 │  └────────────────────────────────────────────────────────────────────┘     │
-│                           │                                                  │
+│                           │                                                 │
 │           ┌───────────────┼───────────────┐                                 │
 │           │               │               │                                 │
 │           ▼               ▼               ▼                                 │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────────────┐     │
-│  │ Check Stock │  │  Acquire    │  │    Publish to SQS               │     │
-│  │   (Redis)   │  │    Lock     │  │    (async order processing)     │     │
-│  └─────────────┘  └─────────────┘  └─────────────────────────────────┘     │
-│                                                                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────────────┐      │
+│  │ Check Stock │  │  Acquire    │  │    Publish to SQS               │      │
+│  │   (Redis)   │  │    Lock     │  │    (async order processing)     │      │
+│  └─────────────┘  └─────────────┘  └─────────────────────────────────┘      │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
         ┌───────────────────────────┼───────────────────────────┐
@@ -92,7 +92,7 @@
 │  │             │  │    │  │ res:{uid}:{p} │  │    │  │ • user_id     │  │
 │  │ Failed ords │  │    │  │   → reservatn │  │    │  │ • created_at  │  │
 │  │ for analysis│  │    │  │               │  │    │  │               │  │
-│  └─────────────┘  │    │  │ idem:{key}    │  │    │  │ Multi-AZ: ✓   │  │
+│  └─────────────┘  │    │  │ idem:{key}    │  │    │  │ Multi-AZ      │  │
 │                   │    │  │   → dedup     │  │    │  │ Read Replica  │  │
 │  ┌─────────────┐  │    │  │               │  │    │  │   (optional)  │  │
 │  │ Fairness Q  │  │    │  │ queue:{pid}   │  │    │  └───────────────┘  │
@@ -113,11 +113,11 @@
                          └─────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                        ASYNC PROCESSING LAYER                                │
+│                        ASYNC PROCESSING LAYER                               │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  ┌────────────────────────────────────────────────────────────────────┐     │
-│  │                      Order Processor Service                        │     │
-│  │                                                                     │     │
+│  │                      Order Processor Service                       │     │
+│  │                                                                    │     │
 │  │  • Poll SQS for pending orders                                     │     │
 │  │  • Validate reservation still valid                                │     │
 │  │  • Simulate payment processing (configurable delay)                │     │
@@ -125,66 +125,66 @@
 │  │  • Cleanup Redis reservation                                       │     │
 │  │  • Update inventory in DB (final sync)                             │     │
 │  │  • Emit completion metrics                                         │     │
-│  │                                                                     │     │
+│  │                                                                    │     │
 │  │  Tech: Go | Min: 1 | Max: 5 tasks | CPU: 256 | Mem: 512            │     │
 │  └────────────────────────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────────────────────────┐
 │                         OBSERVABILITY LAYER                                  │
-├─────────────────────────────────────────────────────────────────────────────┤
+├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────────┐   │
-│  │    CloudWatch    │  │   CloudWatch     │  │    Custom Metrics     │   │
-│  │ Container Insights│  │      Logs       │  │                          │   │
-│  │                  │  │                  │  │  • Oversell counter      │   │
-│  │ • CPU/Memory    │  │ • Application    │  │  • Purchase success rate │   │
-│  │ • Network I/O   │  │   logs (JSON)    │  │  • Latency percentiles   │   │
-│  │ • Task count    │  │ • Access logs    │  │  • Queue depth           │   │
-│  │ • Request count │  │ • Error traces   │  │  • Lock contention       │   │
-│  └──────────────────┘  └──────────────────┘  │  • Fairness metrics      │   │
-│                                              │  • Circuit breaker state │   │
-│  ┌──────────────────┐  ┌──────────────────┐  └──────────────────────────┘   │
-│  │  CloudWatch      │  │    X-Ray         │                                 │
-│  │    Alarms        │  │   (Tracing)      │  ┌──────────────────────────┐   │
-│  │                  │  │                  │  │   Experiment Metrics     │   │
-│  │ • High error %   │  │ • Request flow
-│  │ • Scaling events │  │ • Latency trace  │  │                          │   │
-│  │ • DLQ depth      │  │ • Service map    │  │  • Raw Locust CSV        │   │
-│  │ • Redis latency  │  │ • Error analysis │  │  • CloudWatch exports    │   │
-│  └──────────────────┘  └──────────────────┘  │  • Trial comparisons     │   │
-│                                              └──────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────────┘
+│  ┌───────────────────┐  ┌──────────────────┐  ┌──────────────────────────┐   │
+│  │    CloudWatch     │  │   CloudWatch     │  │    Custom Metrics        │   │
+│  │ Container Insights│  │      Logs        │  │                          │   │
+│  │                   │  │                  │  │  • Oversell counter      │   │
+│  │ • CPU/Memory      │  │ • Application    │  │  • Purchase success rate │   │
+│  │ • Network I/O     │  │   logs (JSON)    │  │  • Latency percentiles   │   │
+│  │ • Task count      │  │ • Access logs    │  │  • Queue depth           │   │
+│  │ • Request count   │  │ • Error traces   │  │  • Lock contention       │   │
+│  └───────────────────┘  └──────────────────┘  │  • Fairness metrics      │   │
+│                                               │  • Circuit breaker state │   │
+│  ┌──────────────────┐  ┌──────────────────┐   └──────────────────────────┘   │
+│  │  CloudWatch      │  │    X-Ray         │                                  │
+│  │    Alarms        │  │   (Tracing)      │  ┌──────────────────────────┐    │
+│  │                  │  │                  │  │   Experiment Metrics     │    │
+│  │ • High error %   │  │ • Request flow   │  │                          │    │
+│  │ • Scaling events │  │ • Latency trace  │  │                          │    │
+│  │ • DLQ depth      │  │ • Service map    │  │  • Raw Locust CSV        │    │
+│  │ • Redis latency  │  │ • Error analysis │  │  • CloudWatch exports    │    │
+│  └──────────────────┘  └──────────────────┘  │  • Trial comparisons     │    │
+│                                              └──────────────────────────┘    │
+└──────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                       CHAOS ENGINEERING LAYER (Exp 3)                        │
+│                       CHAOS ENGINEERING LAYER (Exp 3)                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
+│                                                                             │
 │  ┌────────────────────────────────────────────────────────────────────┐     │
-│  │                     Fault Injection Mechanisms                      │     │
-│  │                                                                     │     │
+│  │                     Fault Injection Mechanisms                     │     │
+│  │                                                                    │     │
 │  │  Application-Level (Feature Flags):                                │     │
 │  │  • CHAOS_REDIS_FAIL=true      → Simulate Redis connection failure  │     │
 │  │  • CHAOS_DB_LATENCY=500ms     → Add artificial DB latency          │     │
 │  │  • CHAOS_RANDOM_PANIC=0.01    → 1% chance of service panic         │     │
 │  │  • CHAOS_PAYMENT_FAIL=0.1     → 10% payment failure rate           │     │
-│  │                                                                     │     │
+│  │                                                                    │     │
 │  │  Infrastructure-Level:                                             │     │
 │  │  • ECS task termination (via AWS CLI/SDK)                          │     │
 │  │  • Redis failover trigger                                          │     │
 │  │  • RDS failover (Multi-AZ)                                         │     │
 │  │  • Security group modification (network partition simulation)      │     │
-│  │                                                                     │     │
+│  │                                                                    │     │
 │  └────────────────────────────────────────────────────────────────────┘     │
-│                                                                              │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ## Auto-Scaling Configuration (Exp 2)
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                        SCALING POLICIES                                      │
+│                        SCALING POLICIES                                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
+│                                                                             │
 │  Policy A: Target Tracking (CPU-based)                                      │
 │  ┌────────────────────────────────────────────────────────────────────┐     │
 │  │  target_value          = 60  (60% CPU utilization)                 │     │
@@ -192,7 +192,7 @@
 │  │  scale_out_cooldown    = 60  seconds                               │     │
 │  │  disable_scale_in      = false                                     │     │
 │  └────────────────────────────────────────────────────────────────────┘     │
-│                                                                              │
+│                                                                             │
 │  Policy B: Step Scaling (Request-based)                                     │
 │  ┌────────────────────────────────────────────────────────────────────┐     │
 │  │  Alarm: RequestCountPerTarget > 1000                               │     │
@@ -202,14 +202,14 @@
 │  │    • 3000+     req → +5 tasks (to max)                             │     │
 │  │  Cooldown: 30 seconds                                              │     │
 │  └────────────────────────────────────────────────────────────────────┘     │
-│                                                                              │
+│                                                                             │
 │  Policy C: Scheduled + Predictive (Pre-warming)                             │
 │  ┌────────────────────────────────────────────────────────────────────┐     │
 │  │  • T-5min before sale: Scale to max (10 tasks)                     │     │
 │  │  • T+0 (sale start): Maintain max                                  │     │
 │  │  • T+30min: Allow scale-in based on actual load                    │     │
 │  └────────────────────────────────────────────────────────────────────┘     │
-│                                                                              │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
