@@ -38,7 +38,7 @@ func main() {
 	// Initialize SQS consumer
 	sqsConsumer, err := consumer.NewSQSConsumer(orderProcessor)
 	if err != nil {
-		log.Fatalf("Failed to initialize SQS consumer: %v", err)
+		log.Fatalf("Failed to initializ,>LJe SQS consumer: %v", err)
 	}
 
 	// Create context for graceful shutdown

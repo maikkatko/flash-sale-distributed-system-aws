@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	_ "github.com/lib/pq"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // Order represents an order in the database
@@ -32,15 +32,15 @@ type OrderRepository struct {
 // NewOrderRepository creates a new order repository with PostgreSQL connection
 func NewOrderRepository() (*OrderRepository, error) {
 	host := os.Getenv("DB_HOST")
-	port := getEnvOrDefault("DB_PORT", "5432")
+	port := getEnvOrDefault("DB_PORT", "3306")
 	user := os.Getenv("DB_USER")
 	password := os.Getenv("DB_PASSWORD")
 	dbname := os.Getenv("DB_NAME")
 
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
+		user, password, host, port, dbname)
 
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -64,7 +64,7 @@ func NewOrderRepository() (*OrderRepository, error) {
 		return nil, fmt.Errorf("failed to connect to database after retries: %w", pingErr)
 	}
 
-	log.Println("Order Repository: Successfully connected to PostgreSQL")
+	log.Println("Order Repository: Successfully connected to MySQL")
 
 	repo := &OrderRepository{db: db}
 
@@ -80,42 +80,41 @@ func NewOrderRepository() (*OrderRepository, error) {
 func (r *OrderRepository) initSchema() error {
 	schema := `
 		CREATE TABLE IF NOT EXISTS products (
-			id SERIAL PRIMARY KEY,
+			id INT AUTO_INCREMENT PRIMARY KEY,
 			name VARCHAR(255) NOT NULL,
 			price DECIMAL(10,2) NOT NULL,
 			initial_stock INT NOT NULL,
 			current_stock INT NOT NULL,
-			created_at TIMESTAMP DEFAULT NOW()
-		);
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		) ENGINE=InnoDB;
 
 		CREATE TABLE IF NOT EXISTS orders (
-			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			id VARCHAR(36) PRIMARY KEY,
 			user_id VARCHAR(255) NOT NULL,
-			product_id INT REFERENCES products(id),
+			product_id INT,
 			quantity INT NOT NULL DEFAULT 1,
 			total_price DECIMAL(10,2) NOT NULL,
 			status VARCHAR(50) NOT NULL DEFAULT 'pending',
-			correlation_id UUID,
-			created_at TIMESTAMP DEFAULT NOW(),
-			updated_at TIMESTAMP DEFAULT NOW()
-		);
-
-		CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
-		CREATE INDEX IF NOT EXISTS idx_orders_product_id ON orders(product_id);
-		CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+			correlation_id VARCHAR(36),
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			FOREIGN KEY (product_id) REFERENCES products(id),
+			INDEX idx_orders_user_id (user_id),
+			INDEX idx_orders_product_id (product_id),
+			INDEX idx_orders_status (status)
+		) ENGINE=InnoDB;
 
 		CREATE TABLE IF NOT EXISTS audit_log (
-			id SERIAL PRIMARY KEY,
+			id INT AUTO_INCREMENT PRIMARY KEY,
 			event_type VARCHAR(50) NOT NULL,
 			product_id INT,
-			order_id UUID,
+			order_id VARCHAR(36),
 			stock_before INT,
 			stock_after INT,
-			details JSONB,
-			created_at TIMESTAMP DEFAULT NOW()
-		);
-
-		CREATE INDEX IF NOT EXISTS idx_audit_product_id ON audit_log(product_id);
+			details JSON,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			INDEX idx_audit_product_id (product_id)
+		) ENGINE=InnoDB;
 	`
 
 	_, err := r.db.Exec(schema)
@@ -131,8 +130,8 @@ func (r *OrderRepository) initSchema() error {
 func (r *OrderRepository) CreateOrder(ctx context.Context, order Order) error {
 	query := `
 		INSERT INTO orders (id, user_id, product_id, quantity, total_price, status, correlation_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT (id) DO NOTHING
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE id=id
 	`
 
 	_, err := r.db.ExecContext(ctx, query,
@@ -164,7 +163,7 @@ func (r *OrderRepository) DecrementStock(ctx context.Context, productID int, qua
 	// Get current stock for audit
 	var stockBefore int
 	err = tx.QueryRowContext(ctx,
-		"SELECT current_stock FROM products WHERE id = $1 FOR UPDATE",
+		"SELECT current_stock FROM products WHERE id = ? FOR UPDATE",
 		productID,
 	).Scan(&stockBefore)
 	if err != nil {
@@ -173,8 +172,8 @@ func (r *OrderRepository) DecrementStock(ctx context.Context, productID int, qua
 
 	// Decrement stock
 	result, err := tx.ExecContext(ctx,
-		"UPDATE products SET current_stock = current_stock - $1 WHERE id = $2 AND current_stock >= $1",
-		quantity, productID,
+		"UPDATE products SET current_stock = current_stock - ? WHERE id = ? AND current_stock >= ?",
+		quantity, productID, quantity,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to decrement stock: %w", err)
@@ -189,7 +188,7 @@ func (r *OrderRepository) DecrementStock(ctx context.Context, productID int, qua
 	stockAfter := stockBefore - quantity
 	_, err = tx.ExecContext(ctx,
 		`INSERT INTO audit_log (event_type, product_id, stock_before, stock_after, details)
-		 VALUES ('stock_decrement', $1, $2, $3, $4)`,
+		 VALUES ('stock_decrement', ?, ?, ?, ?)`,
 		productID, stockBefore, stockAfter,
 		fmt.Sprintf(`{"quantity": %d}`, quantity),
 	)
@@ -211,7 +210,7 @@ func (r *OrderRepository) GetOrder(ctx context.Context, orderID string) (*Order,
 	var order Order
 	err := r.db.QueryRowContext(ctx,
 		`SELECT id, user_id, product_id, quantity, total_price, status, correlation_id, created_at, updated_at
-		 FROM orders WHERE id = $1`,
+		 FROM orders WHERE id = ?`,
 		orderID,
 	).Scan(
 		&order.ID, &order.UserID, &order.ProductID, &order.Quantity,
@@ -230,7 +229,7 @@ func (r *OrderRepository) GetOrder(ctx context.Context, orderID string) (*Order,
 // UpdateOrderStatus updates the status of an order
 func (r *OrderRepository) UpdateOrderStatus(ctx context.Context, orderID string, status string) error {
 	_, err := r.db.ExecContext(ctx,
-		"UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2",
+		"UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?",
 		status, orderID,
 	)
 	if err != nil {
