@@ -5,14 +5,14 @@ module "network" {
   service_name   = var.service_name
 }
 
-module "ecr_products" {
+module "ecr_flash_sale_api" {
   source          = "./modules/ecr"
-  repository_name = "${var.service_name}-products"
+  repository_name = "${var.service_name}-flash-sale-api"
 }
 
-module "ecr_orders" {
+module "ecr_order_processor" {
   source          = "./modules/ecr"
-  repository_name = "${var.service_name}-orders"
+  repository_name = "${var.service_name}-order-processor"
 }
 
 module "logging" {
@@ -125,10 +125,10 @@ module "elasticache" {
 }
 
 # UPDATED: ECS with Auto-Scaling and ALB Integration
-module "ecs_products" {
+module "ecs_flash_sale_api" {
   source             = "./modules/ecs"
   service_name       = var.service_name
-  image              = docker_registry_image.products_app_registry.name
+  image              = docker_registry_image.flash_sale_api_registry.name
   container_port     = var.container_port_products
   subnet_ids         = module.network.private_subnet_ids
   security_group_ids = [aws_security_group.ecs_tasks.id]
@@ -158,10 +158,10 @@ module "ecs_products" {
   }
 }
 
-module "ecs_orders" {
+module "ecs_order_processor" {
   source             = "./modules/ecs"
   service_name       = "${var.service_name}-orders"
-  image              = docker_registry_image.orders_app_registry.name
+  image              = docker_registry_image.order_processor_registry.name
   container_port     = var.container_port_orders
   subnet_ids         = module.network.private_subnet_ids
   security_group_ids = [aws_security_group.ecs_tasks.id]
@@ -196,28 +196,28 @@ module "ecs_orders" {
 }
 
 # Build & push the Go app image into ECR
-resource "docker_image" "products_app" {
-  name  = "${module.ecr_products.repository_url}:latest"
+resource "docker_image" "flash_sale_api" {
+  name  = "${module.ecr_flash_sale_api.repository_url}:latest"
   build {
-    context    = "../src/products"
+    context    = "../src/flash-sale-api"
     platform   = "linux/amd64"
   }
-  depends_on = [module.ecr_products]
+  depends_on = [module.ecr_flash_sale_api]
 }
 
-resource "docker_registry_image" "products_app_registry" {
-  name = docker_image.products_app.name
+resource "docker_registry_image" "flash_sale_registry" {
+  name = docker_image.flash_sale_api_app.name
 }
 
-resource "docker_image" "orders_app" {
-  name  = "${module.ecr_orders.repository_url}:latest"
+resource "docker_image" "order_processor" {
+  name  = "${module.ecr_order_processor.repository_url}:latest"
   build {
-    context  = "../src/orders"
+    context  = "../src/order-processor"
     platform = "linux/amd64"
   }
-  depends_on = [module.ecr_orders]
+  depends_on = [module.ecr_order_processor]
 }
 
-resource "docker_registry_image" "orders_app_registry" {
-  name = docker_image.orders_app.name
+resource "docker_registry_image" "order_processor_registry" {
+  name = docker_image.order_processor_app.name
 }
